@@ -12,13 +12,7 @@
         <p class="success">Вы успешно вышли из системы.</p>
     <?php endif; ?>
     <?php if (isset($_GET['error'])): ?>
-        <?php if ($_GET['error'] == 'invalid_password'): ?>
-            <p>Неправильный пароль. Пожалуйста, попробуйте еще раз.</p>
-        <?php elseif ($_GET['error'] == 'user_not_found'): ?>
-            <p>Пользователь не найден. Пожалуйста, зарегистрируйтесь.</p>
-        <?php elseif ($_GET['error'] == 'exception'): ?>
-            <p>Произошла ошибка при входе в систему. Пожалуйста, попробуйте позже.</p>
-        <?php endif; ?>
+        <p><?php echo htmlspecialchars($_GET['error']); ?></p>
     <?php endif; ?>
     <form action="login.php" method="POST">
         <input type="text" name="username" placeholder="Username" required>

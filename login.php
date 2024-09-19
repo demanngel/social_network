@@ -3,6 +3,23 @@ session_start();
 include './db.php';
 
 try {
+    if ($conn->connect_error) {
+        throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
+    }
+
+    $create_table_sql = "
+        CREATE TABLE IF NOT EXISTS users (
+            id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )";
+
+    if (!$conn->query($create_table_sql)) {
+        throw new Exception("Ошибка при создании таблицы: " . $conn->error);
+    }
+
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = $_POST['username'];
         $password = $_POST['password'];
@@ -23,12 +40,10 @@ try {
                     header('Location: posts.php');
                     exit();
                 } else {
-                    header('Location: loginForm.php?error=invalid_password');
-                    exit();
+                    throw new Exception("Неверный пароль.");
                 }
             } else {
-                header('Location: loginForm.php?error=user_not_found');
-                exit();
+                throw new Exception("Пользователь не найден.");
             }
 
             $stmt->close();
@@ -37,7 +52,7 @@ try {
         }
     }
 } catch (Exception $e) {
-    header('Location: loginForm.php?error=exception');
+    header('Location: loginForm.php?error=' . urlencode($e->getMessage()));
     exit();
 } finally {
     $conn->close();

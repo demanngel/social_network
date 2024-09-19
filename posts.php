@@ -4,8 +4,55 @@ include './db.php';
 
 try {
     if (!isset($_SESSION['user_id'])) {
-        header('Location: login.php');
+        header('Location: loginForm.php');
         exit();
+    }
+
+    $user_id = $_SESSION['user_id'];
+    $sql = "SELECT id FROM users WHERE id = ?";
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            session_destroy();
+            header('Location: loginForm.php?error=user_deleted');
+            exit();
+        }
+    } else {
+        throw new Exception("Ошибка при подготовке запроса: " . $conn->error);
+    }
+
+    if ($conn->connect_error) {
+        throw new Exception('Ошибка подключения к базе данных: ' . $conn->connect_error);
+    }
+
+    $create_table_sql = "
+        CREATE TABLE IF NOT EXISTS users (
+            id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )";
+
+    if (!$conn->query($create_table_sql)) {
+        throw new Exception("Ошибка при создании таблицы: " . $conn->error);
+    }
+    
+    $createTableSQL = "
+        CREATE TABLE IF NOT EXISTS posts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT UNSIGNED NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+    ";
+
+    if (!$conn->query($createTableSQL)) {
+        throw new Exception('Ошибка при создании таблицы постов: ' . $conn->error);
     }
 
     if (isset($_GET['delete'])) {
@@ -65,8 +112,7 @@ try {
         throw new Exception("Ошибка при подготовке запроса: " . $conn->error);
     }
 } catch (Exception $e) {
-    // Перенаправление при исключении
-    header('Location: posts.php?error=' . urlencode($e->getMessage()));
+    header('Location: error.php?error=' . urlencode($e->getMessage()));
     exit();
 } finally {
     $conn->close();
