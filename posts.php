@@ -40,7 +40,7 @@ try {
     if (!$conn->query($create_table_sql)) {
         throw new Exception("Ошибка при создании таблицы: " . $conn->error);
     }
-    
+
     $createTableSQL = "
         CREATE TABLE IF NOT EXISTS posts (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -74,6 +74,25 @@ try {
         }
     }
 
+    $updated_post = null;
+    if (isset($_GET['update'])) {
+        $post_id = intval($_GET['update']);
+        $sql = "SELECT posts.id AS post_id, posts.content, posts.created_at, posts.user_id, users.username 
+                FROM posts 
+                JOIN users ON posts.user_id = users.id 
+                WHERE posts.id = ?";
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param('i', $post_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $updated_post = $result->fetch_assoc();
+            $stmt->close();
+        } else {
+            throw new Exception("Ошибка при подготовке запроса: " . $conn->error);
+        }
+    }
+    
+    
     if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['content'])) {
         $content = $_POST['content'];
         $user_id = $_SESSION['user_id'];
@@ -104,13 +123,34 @@ try {
         ORDER BY posts.created_at DESC";
 
     $search_query = "%$search%";
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param('sss', $search_query, $search_query, $search_query);
-        $stmt->execute();
-        $result = $stmt->get_result();
-    } else {
-        throw new Exception("Ошибка при подготовке запроса: " . $conn->error);
+    if(!isset($_GET['update'])) {
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param('sss', $search_query, $search_query, $search_query);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $_SESSION['posts'] = $result->fetch_all(MYSQLI_ASSOC);
+        } else {
+            throw new Exception("Ошибка при подготовке запроса: " . $conn->error);
+        } 
     }
+
+    if ($updated_post != null) {
+        if (isset($_SESSION['posts'])) {
+            foreach ($_SESSION['posts'] as $index => $post) {
+                if ($post['id'] == $updated_post['post_id']) {
+                    $_SESSION['posts'][$index] = [
+                        'id' => $updated_post['post_id'],
+                        'content' => $updated_post['content'],
+                        'created_at' => $updated_post['created_at'],
+                        'username' => $updated_post['username']
+                    ];
+                    break;
+                }
+            }
+        }
+    }
+    
+    $result= isset($_SESSION['posts']) ? $_SESSION['posts'] : [];
 } catch (Exception $e) {
     header('Location: error.php?error=' . urlencode($e->getMessage()));
     exit();
@@ -169,21 +209,18 @@ try {
             <th>Author</th>
             <th>Actions</th>
         </tr>
-
-        <?php while ($row = $result->fetch_assoc()): ?>
+        <?php foreach ($result as $row): ?>
             <tr>
-                <td><?php echo htmlspecialchars($row['id']); ?></td>
-                <td><?php echo htmlspecialchars($row['content']); ?></td>
-                <td><?php echo htmlspecialchars($row['created_at']); ?></td>
-                <td><?php echo htmlspecialchars($row['username']); ?></td>
-                <td>
-                    <?php /*if ($row['username'] == $_SESSION['username']): */?><!--
-                        <a href="posts.php?delete=<?php /*echo htmlspecialchars($row['id']); */?>" onclick="return confirm('Are you sure you want to delete this post?');">Delete</a>
-                    --><?php /*endif; */?>
-                    <a href="posts.php?delete=<?php echo htmlspecialchars($row['id']); ?>" onclick="return confirm('Вы уверены, что хотите удалить этот пост?');">Delete</a>
-                </td>
+            <td><?php echo htmlspecialchars($row['id']); ?></td>
+            <td><?php echo htmlspecialchars($row['content']); ?></td>
+            <td><?php echo htmlspecialchars($row['created_at']); ?></td>
+            <td><?php echo htmlspecialchars($row['username']); ?></td>
+            <td>
+                <a href="posts.php?delete=<?php echo htmlspecialchars($row['id']); ?>" onclick="return confirm('Вы уверены, что хотите удалить этот пост?');">Delete</a>
+                <a href="posts.php?update=<?php echo htmlspecialchars($row['id']); ?>">Update</a>
+            </td>
             </tr>
-        <?php endwhile; ?>
+        <?php endforeach; ?>
     </table>
 </div>
 </body>
