@@ -10,6 +10,13 @@ body {
     overflow-x: hidden;
 }
 
+p, h2 {
+   /* max-width: 100%;*/
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
 .container {
     width: 100%;
     max-width: 400px;
@@ -21,7 +28,11 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 20px;
+    margin-top: 70px;
+}
+
+.auth p {
+    margin: 10px 0;
 }
 
 .posts {
@@ -30,9 +41,9 @@ body {
 
 h1 {
     font-size: 32px;
-    margin-bottom: 10px;
     color: #6a1b9a;
     font-weight: 600;
+    margin: 10px 0;
 }
 
 form {
@@ -40,7 +51,6 @@ form {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20px;
 }
 
 input {
@@ -71,22 +81,29 @@ textarea {
     box-sizing: border-box;
 }
 
-button {
-    padding: 12px;
+button, .back-button {
+    padding: 10px;
     background: linear-gradient(135deg, #ff7043, #ff5722);
     color: #ffffff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    width: 100%;
     font-size: 18px;
     font-weight: 600;
     transition: background 0.3s;
     box-sizing: border-box;
 }
 
-button:hover {
+button:hover , .back-button {
     background: linear-gradient(135deg, #ff5722, #e64a19);
+}
+
+button[name="leave_group"] {
+    background: linear-gradient(135deg, #7415bc, #6920af);
+}
+
+button[name="leave_group"]:hover {
+    background: linear-gradient(135deg, #6920af, #4a058a);
 }
 
 a {
@@ -100,13 +117,12 @@ a:hover {
 }
 
 p {
-    margin: 10px 0;
+    margin: 0;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
 }
 
 table, th, td {
@@ -157,36 +173,10 @@ table tr:nth-child(even) {
     color: red;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-table th, table td {
-    padding: 10px;
-    text-align: left;
-}
-
-table th {
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #ddd;
-}
-
-table tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-table td:nth-child(2) {
-    word-wrap: break-word;
-    word-break: break-all;
-    white-space: normal;
-}
-
 .search-container {
     display: flex;
-    margin-bottom: 15px;
     width: 100%;
+    margin-top: 10px;
 }
 
 .search-button {
@@ -194,8 +184,210 @@ table td:nth-child(2) {
     color: #6a1b9a;
     width: 0;
     height: 0;
+    padding: 12px 20px 0 0;
 }
 
 .search-button:hover{
     background: transparent;
 }
+
+.search-container input {
+    margin: 0 10px 0 0;
+}
+
+.header-container {
+    position: sticky;
+}
+
+header {
+    width: 100%;
+    position: fixed;
+    top: 0;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(106, 27, 154, 0.7);
+    backdrop-filter: blur(10px);
+    width: 100%;
+}
+
+.navel {
+    text-decoration: none;
+    color: #FFFFFF;
+    margin: 10px 50px;
+    font-size: 20px;
+    text-transform: uppercase;
+}
+
+.radio-group {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    color: #333;
+}
+
+.radio-label input[type="radio"] {
+    margin:  3px 5px 0 15px;
+    transform: scale(1.2);
+}
+
+.groups {
+    max-width: 600px;
+
+}
+
+.group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.group h2 {
+    margin: 0;
+}
+
+.group_info {
+    display: flex;
+    flex-direction: column;
+}
+
+.post_content {
+    margin-top: 10px;
+}
+
+.posts-container {
+    width: 100%;
+    flex-direction: row;
+}
+
+.post {
+    display: flex;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.post-info {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.post h2 {
+    margin: 0;
+}
+
+.post-author {
+    align-self: start;
+    color: #6a1b9a;
+}
+
+.post-date {
+    align-self: end;
+    font-size: 13px;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 10px;
+}
+
+.action-button {
+    height: 40px;
+    width: 40px;
+    margin-top: 5px;
+}
+
+.subscribers {
+    width: 100%;
+}
+
+.subscriber {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.back-button {
+    align-self: start;
+}
+
+.back-button a {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.container-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-items: center;
+}
+
+.users {
+    width: 100%;
+}
+
+.user {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.error-container {
+    max-width: 600px;
+}
+
+.error-container a {
+    margin-top: 10px;
+}
+
+select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+select:hover {
+    border-color: #007bff;
+}
+
+select:focus {
+    outline: none;
+    border-color: #007bff;
+    background-color: #fff;
+}
+
+.transfer-actions {
+    display: flex;
+    flex-direction: row;
+}
+
+.edit-user p {
+    margin-bottom: 10px;
+}
+
+

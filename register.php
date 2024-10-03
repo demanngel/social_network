@@ -6,23 +6,12 @@ try {
         throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
     }
 
-    $create_table_sql = "
-        CREATE TABLE IF NOT EXISTS users (
-            id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(50) NOT NULL UNIQUE,
-            email VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )";
-
-    if (!$conn->query($create_table_sql)) {
-        throw new Exception("Ошибка при создании таблицы: " . $conn->error);
-    }
-
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = $_POST['username'];
         $email = $_POST['email'];
         $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        $role =$_POST['role'];
+
 
         if (empty($username) || !preg_match('/^[A-Za-z0-9_]{3,20}$/', $username)) {
             $errors[] = "Имя пользователя должно содержать от 3 до 20 символов и может содержать только буквы, цифры и подчеркивания.";
@@ -51,9 +40,9 @@ try {
                 header('Location: registerForm.php?error=user_exists');
                 exit();
             } else {
-                $sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+                $sql = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
                 if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('sss', $username, $email, $password);
+                    $stmt->bind_param('ssss', $username, $email, $password, $role);
 
                     if ($stmt->execute()) {
                         header('Location: loginForm.php?success=registered');

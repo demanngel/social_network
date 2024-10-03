@@ -7,16 +7,9 @@ try {
         throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
     }
 
-    $create_table_sql = "
-        CREATE TABLE IF NOT EXISTS users (
-            id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(50) NOT NULL UNIQUE,
-            email VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )";
+    $sql = "CALL CreateUsersTable();";
 
-    if (!$conn->query($create_table_sql)) {
+    if (!$conn->query($sql)) {
         throw new Exception("Ошибка при создании таблицы: " . $conn->error);
     }
 
@@ -33,11 +26,12 @@ try {
             if ($result->num_rows > 0) {
                 $user = $result->fetch_assoc();
 
+                echo $password . " " . $user['password'];
+
                 if (password_verify($password, $user['password'])) {
                     $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
 
-                    header('Location: posts.php');
+                    header('Location: homepage.php');
                     exit();
                 } else {
                     throw new Exception("Неверный пароль.");

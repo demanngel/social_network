@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="container">
+<div class="container auth">
     <h1>Login</h1>
     <?php if (isset($_GET['message']) && $_GET['message'] == 'logged_out'): ?>
         <p class="success">Вы успешно вышли из системы.</p>

@@ -1,3 +1,9 @@
+<?php
+include './db.php';
+include 'header.php';
+
+$error_message = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Неизвестная ошибка.';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,15 +12,12 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="container">
-    <h1>Ошибка</h1>
-    <?php if (isset($_GET['error'])): ?>
-        <p class="error"><?php echo htmlspecialchars($_GET['error']); ?></p>
-    <?php else: ?>
-        <p class="error">Произошла неизвестная ошибка.</p>
-    <?php endif; ?>
-    <a href="posts.php">Вернуться на страницу постов</a>
+<div class="container error-container">
+    <h1>Произошла ошибка!</h1>
+    <div class="error-message">
+        <p><?php echo $error_message; ?></p>
+    </div>
+    <a href="homepage.php">Вернуться на главную страницу</a>
 </div>
 </body>
 </html>
-

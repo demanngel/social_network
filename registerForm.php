@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="container">
+<div class="container auth">
     <h1>Register</h1>
     <?php if (isset($_GET['error'])): ?>
         <?php if ($_GET['error'] == 'user_exists'): ?>
@@ -23,6 +23,15 @@
         <input type="text" name="username" placeholder="Username" required>
         <input type="email" name="email" placeholder="Email" required>
         <input type="password" name="password" placeholder="Password" required>
+        <div class="radio-group">
+            <label for="role" class="form-label">Role:</label>
+            <label class="radio-label">
+                <input type="radio" name="role" value="user" checked> User
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="role" value="moderator"> Moderator
+            </label>
+        </div>
         <button type="submit">Register</button>
     </form>
     <p>Already have an account? <a href="loginForm.php">Login here</a>.</p>
