@@ -39,8 +39,6 @@ try {
 
     $is_member = false;
     if ($user_role == 'user') {
-
-
         $sql = "SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?";
         if ($stmt = $conn->prepare($sql)) {
             $stmt->bind_param('ii', $group_id, $user_id);
@@ -55,7 +53,7 @@ try {
 
         if (isset($_POST['add_post'])) {
             $post_content = $_POST['post_content'];
-            $sql = "INSERT INTO group_suggested_posts (group_id, user_id, content) VALUES (?, ?, ?)";
+            $sql = "INSERT INTO group_suggested_posts (group_id, user_id, content, status) VALUES (?, ?, ?, 'on_moderation')";
             if ($stmt = $conn->prepare($sql)) {
                 $stmt->bind_param('iis', $group_id, $user_id, $post_content);
                 $stmt->execute();
@@ -94,52 +92,60 @@ try {
         }
     }
 
-    if (isset($_POST['delete_post'])) {
-        $post_id = intval($_POST['post_id']);
-        $sql = "DELETE FROM group_suggested_posts WHERE id = ?";
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('i', $post_id);
-            $stmt->execute();
-            $stmt->close();
-            header("Location: group.php?id=$group_id");
-            exit();
-        } else {
-            throw new Exception("Ошибка при удалении поста: " . $conn->error);
+    if ($user_role == 'moderator') {
+        if (isset($_POST['delete_post'])) {
+            $post_id = intval($_POST['post_id']);
+            $sql = "DELETE FROM group_approved_posts WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('i', $post_id);
+                $stmt->execute();
+                $stmt->close();
+                header("Location: group.php?id=$group_id");
+                exit();
+            } else {
+                throw new Exception("Ошибка при удалении поста: " . $conn->error);
+            }
+        }
+
+        if (isset($_POST['delete_group'])) {
+            $sql = "DELETE FROM `groups` WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('i', $group_id);
+                $stmt->execute();
+                $stmt->close();
+
+                $sql = "DELETE FROM group_members WHERE group_id = ?";
+                if ($stmt = $conn->prepare($sql)) {
+                    $stmt->bind_param('i', $group_id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+                $sql = "DELETE FROM group_suggested_posts WHERE group_id = ?";
+                if ($stmt = $conn->prepare($sql)) {
+                    $stmt->bind_param('i', $group_id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+                header("Location: groups.php");
+                exit();
+            } else {
+                throw new Exception("Ошибка при удалении группы: " . $conn->error);
+            }
         }
     }
 
-    if ($user_role == 'moderator') {
-        $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at
-                FROM group_suggested_posts AS p
-                JOIN users AS u ON p.user_id = u.id
-                WHERE p.group_id = ? AND p.content LIKE ?
-                ORDER BY p.created_at DESC";
+    $sql = "SELECT p.id, p.content, p.created_at
+            FROM group_approved_posts AS p
+            WHERE p.group_id = ? AND p.content LIKE ?
+            ORDER BY p.created_at DESC";
 
-        if ($stmt = $conn->prepare($sql)) {
+    if ($stmt = $conn->prepare($sql)) {
         $search_param = '%' . $search_term . '%';
         $stmt->bind_param('is', $group_id, $search_param);
         $stmt->execute();
         $posts_result = $stmt->get_result();
         $stmt->close();
     }
-    }
-
-    if ($user_role == 'user') {
-    $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at
-            FROM group_suggested_posts AS p
-            JOIN users AS u ON p.user_id = u.id
-            WHERE p.group_id = ? AND p.user_id = ? AND p.content LIKE ?
-            ORDER BY p.created_at DESC";
-
-    if ($stmt = $conn->prepare($sql)) {
-        $search_param = '%' . $search_term . '%';
-        $stmt->bind_param('iis', $group_id, $user_id,$search_param);
-        $stmt->execute();
-        $posts_result = $stmt->get_result();
-        $stmt->close();
-    } else {
-        throw new Exception("Ошибка при получении постов группы: " . $conn->error);
-    }}
 
     $sql = "SELECT COUNT(*) AS subscriber_count FROM group_members WHERE group_id = ?";
     if ($stmt = $conn->prepare($sql)) {
@@ -150,34 +156,6 @@ try {
         $stmt->close();
     } else {
         throw new Exception("Ошибка при получении количества подписчиков: " . $conn->error);
-    }
-
-    if ($user_role == 'moderator') {
-       if (isset($_POST['delete_group'])) {
-        $sql = "DELETE FROM `groups` WHERE id = ?";
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('i', $group_id);
-            $stmt->execute();
-            $stmt->close();
-
-            $sql = "DELETE FROM group_members WHERE group_id = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('i', $group_id);
-                $stmt->execute();
-                $stmt->close();
-            }
-            $sql = "DELETE FROM group_suggested_posts WHERE group_id = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('i', $group_id);
-                $stmt->execute();
-                $stmt->close();
-            }
-            header("Location: groups.php");
-            exit();
-            } else {
-                throw new Exception("Ошибка при удалении группы: " . $conn->error);
-            }
-        }
     }
 } catch (Exception $e) {
     header('Location: error.php?message=' . urlencode($e->getMessage()));
@@ -196,13 +174,13 @@ try {
             <p>Created by: <?php echo htmlspecialchars($group['creator']); ?></p>
             <p>Subscribers: <a href="subscribers.php?group_id=<?php echo $group_id; ?>"><?php echo $subscriber_count; ?></a></p>
         </div>
-        <div class="actions">
+        <div class="actions group-actions">
             <?php if ($user_role == 'moderator'): ?>
-                <form action="edit_group.php" method="GET" style="display:inline;">
+                <form action="edit_group.php" method="GET" >
                     <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                     <button type="submit" class="action-button">✎</button>
                 </form>
-                <form action="group.php?id=<?php echo $group_id; ?>" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this group?');">
+                <form action="group.php?id=<?php echo $group_id; ?>" method="POST" onsubmit="return confirm('Are you sure you want to delete this group?');">
                     <input type="hidden" name="delete_group" value="true">
                     <button type="submit" class="action-button">🗑</button>
                 </form>
@@ -217,6 +195,12 @@ try {
                         <?php endif; ?>
                     </form>
                 </div>
+            <?php endif; ?>
+            <?php if ($user_role == 'moderator' || $is_member): ?>
+                <form action="suggested_posts.php" method="GET">
+                    <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
+                    <button type="submit" class="action-button action-button1">Suggested posts</button>
+                </form>
             <?php endif; ?>
         </div>
     </div>
@@ -242,9 +226,6 @@ try {
             <?php while ($post = $posts_result->fetch_assoc()): ?>
                 <div class="post">
                     <div class="post-info">
-                        <div class="post-author">
-                            <p><strong><?php echo htmlspecialchars($post['author']); ?></strong></p>
-                        </div>
                         <div class="post-content">
                             <h2><?php echo htmlspecialchars($post['content']); ?></h2>
                         </div>
@@ -252,7 +233,7 @@ try {
                             <p><?php echo htmlspecialchars($post['created_at']); ?></p>
                         </div>
                     </div>
-                    <?php if ($post['user_id'] == $user_id || $user_role == 'moderator'): ?>
+                    <?php if ($user_role == 'moderator'): ?>
                         <div class="actions">
                             <form action="edit_post.php?id=<?php echo $post['id'];?>" method="GET">
                                 <input type="hidden" name="id" value="<?php echo $post['id']; ?>">

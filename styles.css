@@ -296,6 +296,7 @@ header {
 .post-date {
     align-self: end;
     font-size: 13px;
+    margin-bottom: 10px;
 }
 
 .actions {
@@ -303,6 +304,11 @@ header {
     flex-direction: column;
     justify-content: center;
     margin-left: 10px;
+    align-items: end;
+}
+
+.group-actions form {
+    width: max-content;
 }
 
 .action-button {
@@ -390,4 +396,19 @@ select:focus {
     margin-bottom: 10px;
 }
 
+.action-button1 {
+    width: max-content;
+    align-self: center;
+}
+
+.suggested-post-actions form {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.suggested-posts {
+    max-width: 600px;
+    margin-bottom: 20px;
+}
 

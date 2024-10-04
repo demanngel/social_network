@@ -11,7 +11,7 @@ try {
     $group_id = intval($_GET['group_id']);
     $user_id = $_SESSION['user_id'];
 
-    $sql = "SELECT id, content FROM group_suggested_posts WHERE id = ?";
+    $sql = "SELECT id, content FROM group_approved_posts WHERE id = ?";
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param('i', $post_id);
         $stmt->execute();
@@ -23,12 +23,12 @@ try {
     }
 
     if (!$post) {
-        throw new Exception("Ошибка: Пост не найден или вы не являетесь его автором.");
+        throw new Exception("Ошибка: Пост не найден.");
     }
 
     if (isset($_POST['update_post'])) {
         $updated_content = $_POST['post_content'];
-        $sql = "UPDATE group_suggested_posts SET content = ? WHERE id = ?";
+        $sql = "UPDATE group_approved_posts SET content = ? WHERE id = ?";
         if ($stmt = $conn->prepare($sql)) {
             $stmt->bind_param('si', $updated_content, $post_id);
             $stmt->execute();
