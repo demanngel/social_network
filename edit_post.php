@@ -46,13 +46,6 @@ try {
 
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Edit post</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
 <body>
 <div class="container">
     <div class="back-button action-button">
@@ -64,5 +57,3 @@ try {
         <button type="submit" name="update_post">Save changes</button>
     </form>
 </div>
-</body>
-</html>

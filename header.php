@@ -39,7 +39,9 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle ?? 'Social Network'; ?></title>
+    <link rel="stylesheet" type="text/css" href="dynamicStyles.php">
     <link rel="stylesheet" href="styles.css">
+
 </head>
 <body>
 <header>
@@ -49,6 +51,7 @@ if (isset($_SESSION['user_id'])) {
 
             <?php if ($user_role == 'admin'): ?>
                 <a href="users.php" class="navel">Users</a>
+                <a href="settings.php" class="navel">Settings</a>
             <?php endif; ?>
 
             <?php if ($user_role == 'user' || $user_role == 'moderator'): ?>

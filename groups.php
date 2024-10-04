@@ -153,12 +153,12 @@ try {
 
                     <div class="group_actions">
                         <?php if ($group['is_member'] == 0): ?>
-                            <form action="groups.php" method="POST" style="display:inline;">
+                            <form action="groups.php" method="POST">
                                 <input type="hidden" name="group_id" value="<?php echo $group['id']; ?>">
                                 <button type="submit" name="join_group">Join Group</button>
                             </form>
                         <?php else: ?>
-                            <form action="groups.php" method="POST" style="display:inline;">
+                            <form action="groups.php" method="POST">
                                 <input type="hidden" name="group_id" value="<?php echo $group['id']; ?>">
                                 <button type="submit" name="leave_group">Leave Group</button>
                             </form>

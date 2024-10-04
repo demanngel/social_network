@@ -87,7 +87,7 @@ try {
 
 <div class="container edit-user">
     <div class="back-button action-button">
-        <a href="users.php?>">🠔</a>
+        <a href="users.php?>">>🠔</a>
     </div>
     <h2>Edit User</h2>
     <form action="edit_user.php?user_id=<?php echo $user_id; ?>" method="POST">
