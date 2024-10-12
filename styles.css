@@ -70,7 +70,7 @@ input:focus {
     outline: none;
 }
 
-textarea {
+textarea, form textarea {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
@@ -284,6 +284,10 @@ header {
     justify-content: space-between;
 }
 
+.post-info form {
+    width: 100%;
+}
+
 .post h2 {
     margin: 0;
 }
@@ -296,7 +300,19 @@ header {
 .post-date {
     align-self: end;
     font-size: 13px;
-    margin-bottom: 10px;
+}
+
+.post-content {
+    font-size: 26px;
+}
+
+.post-status {
+    align-self: end;
+    font-size: 13px;
+}
+
+.post-container {
+    width: 100%;
 }
 
 .actions {
@@ -410,5 +426,29 @@ select:focus {
 .suggested-posts {
     max-width: 600px;
     margin-bottom: 20px;
+    display: flex;
 }
 
+.suggested-post {
+    display: flex;
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.history {
+    margin-left: 10px;
+}
+
+.history-entry {
+    margin-top: 10px;
+}
+
+.history form {
+    align-self: center;
+    width: max-content;
+}
+
+.post form {
+    align-self: center;
+    width: max-content;
+}

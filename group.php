@@ -1,4 +1,4 @@
-<?php
+ <?php
 include './db.php';
 include 'header.php';
 
@@ -227,7 +227,7 @@ try {
                 <div class="post">
                     <div class="post-info">
                         <div class="post-content">
-                            <h2><?php echo htmlspecialchars($post['content']); ?></h2>
+                            <p><?php echo htmlspecialchars($post['content']); ?></p>
                         </div>
                         <div class="post-date">
                             <p><?php echo htmlspecialchars($post['created_at']); ?></p>
