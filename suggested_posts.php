@@ -11,113 +11,142 @@ try {
     $user_id = $_SESSION['user_id'];
     $user_role = $_SESSION['user_role'] ?? 'user';
 
-    if($user_role == 'moderator') {
-        $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at, p.status, u.rating
-                FROM group_suggested_posts AS p
-                JOIN users AS u ON p.user_id = u.id
-                WHERE p.group_id = ?
-                ORDER BY FIELD(p.status, 'on_moderation', 'on_revision', 'rejected', 'approved'), u.rating DESC, p.created_at DESC";
+if($user_role == 'moderator') {
+    $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at, p.status, u.rating,
+    (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'approved' AND group_id = ?) AS approved_count,
+    (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'rejected' AND group_id = ?) AS rejected_count,
+    (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'on_moderation' AND group_id = ?) AS on_moderation_count
+    FROM group_suggested_posts AS p
+    JOIN users AS u ON p.user_id = u.id
+    WHERE p.group_id = ?
+    ORDER BY 
+    FIELD(p.status, 'on_moderation', 'on_revision', 'rejected', 'approved'), 
+    u.rating DESC, 
+    p.created_at DESC;
+";
 
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('i', $group_id);
-            $stmt->execute();
-            $posts_result = $stmt->get_result();
-            $stmt->close();
-        } else {
-            throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $post_id = intval($_POST['post_id']);
-            $user_post_id = intval($_POST['user_id']);
-            $comment = $_POST['comment'] ?? null;
-            $action = $_POST['action'];
-
-            if ($action === 'approve') {
-                $sql = "INSERT INTO group_approved_posts (group_id, content) 
-                        SELECT group_id, content 
-                        FROM group_suggested_posts WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'approved', ?, ?)";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('iis', $post_id, $_SESSION['user_id'], $comment);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "UPDATE group_suggested_posts SET status = 'approved' WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "UPDATE users SET rating = rating + 1 WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $user_post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                header("Location: suggested_posts.php?group_id=$group_id");
-                exit();
-            } elseif ($action === 'revision') {
-                $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'revision', ?, ?)";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('iis', $post_id, $_SESSION['user_id'], $comment);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "UPDATE group_suggested_posts SET status = 'on_revision' WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "UPDATE users SET rating = rating - 1 WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $user_post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                header("Location: suggested_posts.php?group_id=$group_id");
-                exit();
-            } elseif ($action === 'reject') {
-                $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'rejected', ?, ?)";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('iis', $post_id, $_SESSION['user_id'], $comment);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "UPDATE group_suggested_posts SET status = 'rejected' WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $sql = "UPDATE users SET rating = rating - 2 WHERE id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $user_post_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                header("Location: suggested_posts.php?group_id=$group_id");
-                exit();
-            }
-        }
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param('iiii', $group_id, $group_id, $group_id, $group_id);
+        $stmt->execute();
+        $posts_result = $stmt->get_result();
+        $stmt->close();
+    } else {
+        throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
     }
 
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $post_id = intval($_POST['post_id']);
+        $user_post_id = intval($_POST['user_id']);
+        $comment = $_POST['comment'] ?? null;
+        $action = $_POST['action'];
+        $approved_count = $_POST['approved_count'];
+        $rejected_count = $_POST['rejected_count'];
+        $on_moderation_count = $_POST['on_moderation_count'];
+
+        if ($action === 'approve') {
+            $sql = "INSERT INTO group_approved_posts (group_id, content) 
+                        SELECT group_id, content 
+                        FROM group_suggested_posts WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('i', $post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'approved', ?, ?)";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('iis', $post_id, $_SESSION['user_id'], $comment);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "UPDATE group_suggested_posts SET status = 'approved' WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('i', $post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "UPDATE users SET rating = rating + 1 + 0.1 * ? WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('ii', $approved_count,$user_post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            header("Location: suggested_posts.php?group_id=$group_id");
+            exit();
+        } elseif ($action === 'revision') {
+            $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'revision', ?, ?)";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('iis', $post_id, $_SESSION['user_id'], $comment);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "UPDATE group_suggested_posts SET status = 'on_revision' WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('i', $post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "UPDATE users SET rating = rating - 1 - 0.1 * ? WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('ii', $on_moderation_count,$user_post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            header("Location: suggested_posts.php?group_id=$group_id");
+            exit();
+        } elseif ($action === 'reject') {
+            $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'rejected', ?, ?)";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('iis', $post_id, $_SESSION['user_id'], $comment);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "UPDATE group_suggested_posts SET status = 'rejected' WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('i', $post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            $sql = "UPDATE users SET rating = rating - 2 - 0.1 * ? WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param('ii', $rejected_count,$user_post_id);
+                $stmt->execute();
+                $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
+            }
+
+            header("Location: suggested_posts.php?group_id=$group_id");
+            exit();
+        }
+    }
+}
     if($user_role == 'user') {
         $sql = "SELECT id, content, user_id, created_at, status, 
                 (SELECT comment FROM post_history WHERE post_id = group_suggested_posts.id ORDER BY id DESC LIMIT 1) AS comment
@@ -143,6 +172,8 @@ try {
                 $stmt->bind_param('si', $new_content, $post_id);
                 $stmt->execute();
                 $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
 
             $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'resent_to_moderation', ?, NULL)";
@@ -150,7 +181,10 @@ try {
                 $stmt->bind_param('ii', $post_id, $user_id);
                 $stmt->execute();
                 $stmt->close();
+            } else {
+                throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
+
             header("Location: suggested_posts.php?group_id=$group_id");
             exit();
         }
@@ -192,6 +226,10 @@ try {
                                     <form action="suggested_posts.php?group_id=<?php echo $group_id; ?>" method="POST">
                                         <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                         <input type="hidden" name="user_id" value="<?php echo $post['user_id']; ?>">
+                                        <input type="hidden" name="approved_count" value="<?php echo $post['approved_count']; ?>">
+                                        <input type="hidden" name="rejected_count" value="<?php echo $post['rejected_count']; ?>">
+                                        <input type="hidden" name="on_moderation_count" value="<?php echo $post['on_moderation_count']; ?>">
+
                                         <input type="hidden" name="action" value="">
 
                                         <textarea name="comment" placeholder="Comment"></textarea>
