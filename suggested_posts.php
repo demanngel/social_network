@@ -74,7 +74,7 @@ try {
                 throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
 
-            $sql = "UPDATE users SET rating = rating + 1 + 0.1 * ? WHERE id = ?";
+            $sql = "UPDATE users SET rating = rating + 0.1 * ? WHERE id = ?";
             if ($stmt = $conn->prepare($sql)) {
                 $stmt->bind_param('ii', $approved_count,$user_post_id);
                 $stmt->execute();
@@ -104,7 +104,7 @@ try {
                 throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
 
-            $sql = "UPDATE users SET rating = rating - 1 - 0.1 * ? WHERE id = ?";
+            $sql = "UPDATE users SET rating = rating - 0.1 * ? WHERE id = ?";
             if ($stmt = $conn->prepare($sql)) {
                 $stmt->bind_param('ii', $on_moderation_count,$user_post_id);
                 $stmt->execute();
@@ -134,7 +134,7 @@ try {
                 throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
 
-            $sql = "UPDATE users SET rating = rating - 2 - 0.1 * ? WHERE id = ?";
+            $sql = "UPDATE users SET rating = rating - 0.2 * ? WHERE id = ?";
             if ($stmt = $conn->prepare($sql)) {
                 $stmt->bind_param('ii', $rejected_count,$user_post_id);
                 $stmt->execute();
