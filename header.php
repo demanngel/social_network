@@ -50,6 +50,7 @@ if (isset($_SESSION['user_id'])) {
 
             <?php if ($user_role == 'admin'): ?>
                 <a href="users.php" class="navel">Users</a>
+                <a href="settings.php" class="navel">Settings</a>
             <?php endif; ?>
 
             <?php if ($user_role == 'user' || $user_role == 'moderator'): ?>

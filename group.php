@@ -53,9 +53,10 @@ try {
 
         if (isset($_POST['add_post'])) {
             $post_content = $_POST['post_content'];
-            $sql = "INSERT INTO group_suggested_posts (group_id, user_id, content, status) VALUES (?, ?, ?, 'on_moderation')";
+            $topic_id = intval($_POST['topic_id']);
+            $sql = "INSERT INTO group_suggested_posts (group_id, user_id, content, status, topic_id) VALUES (?, ?, ?, 'on_moderation', ?)";
             if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('iis', $group_id, $user_id, $post_content);
+                $stmt->bind_param('iisi', $group_id, $user_id, $post_content, $topic_id);
                 $stmt->execute();
                 $stmt->close();
                 header("Location: group.php?id=$group_id");
@@ -206,10 +207,21 @@ try {
     </div>
 
     <?php if ($is_member): ?>
-        <form action="group.php?id=<?php echo $group_id; ?>" method="POST">
+        <form action="group.php?id=<?php echo $group_id; ?>" method="POST" class="add_post_container">
+            <label for="topic">Topic:</label>
+            <select name="topic_id" id="topic" class="topic">
+                <?php
+                $topics_sql = "SELECT id, name FROM topics";
+                $topics_result = $conn->query($topics_sql);
+                while ($topic = $topics_result->fetch_assoc()):
+                    ?>
+                    <option value="<?php echo $topic['id']; ?>"><?php echo htmlspecialchars($topic['name']); ?></option>
+                <?php endwhile; ?>
+            </select>
             <textarea name="post_content" class="post_content" required></textarea>
             <button type="submit" name="add_post">Add post</button>
         </form>
+
     <?php endif; ?>
     <?php if ($is_member || $user_role == "moderator"): ?>
         <form action="group.php" method="GET">

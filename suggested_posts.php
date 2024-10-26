@@ -11,19 +11,20 @@ try {
     $user_id = $_SESSION['user_id'];
     $user_role = $_SESSION['user_role'] ?? 'user';
 
-if($user_role == 'moderator') {
-    $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at, p.status, u.rating,
-    (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'approved' AND group_id = ?) AS approved_count,
-    (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'rejected' AND group_id = ?) AS rejected_count,
-    (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'on_moderation' AND group_id = ?) AS on_moderation_count
+    if ($user_role == 'moderator') {
+    $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at, p.status, u.rating, tp.name AS topic,
+        (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'approved' AND group_id = ?) AS approved_count,
+        (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'rejected' AND group_id = ?) AS rejected_count,
+        (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'on_moderation' AND group_id = ?) AS on_moderation_count,
+        (u.rating * COALESCE(CAST((SELECT value FROM settings WHERE name = 'weight_factor1') AS DECIMAL(10, 2)), 0) + COALESCE(tp.weight, 0)) AS final_weight
     FROM group_suggested_posts AS p
     JOIN users AS u ON p.user_id = u.id
+    LEFT JOIN topics AS tp ON tp.id = p.topic_id
     WHERE p.group_id = ?
     ORDER BY 
-    FIELD(p.status, 'on_moderation', 'on_revision', 'rejected', 'approved'), 
-    u.rating DESC, 
-    p.created_at DESC;
-";
+        FIELD(p.status, 'on_moderation', 'on_revision', 'rejected', 'approved'), 
+        final_weight DESC,
+        p.created_at DESC;";
 
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param('iiii', $group_id, $group_id, $group_id, $group_id);
@@ -220,7 +221,13 @@ if($user_role == 'moderator') {
                                     <p>Status: <?php echo htmlspecialchars($post['status']); ?></p>
                                 </div>
                                 <div class="post-status">
-                                    <p>Rating: <?php echo htmlspecialchars($post['rating']); ?></p>
+                                    <p>User rating: <?php echo htmlspecialchars($post['rating']); ?></p>
+                                </div>
+                                <div class="post-status">
+                                    <p>Weight: <?php echo htmlspecialchars($post['final_weight']); ?></p>
+                                </div>
+                                <div class="post-status">
+                                    <p>Topic: <?php echo htmlspecialchars($post['topic']??''); ?></p>
                                 </div>
                             <?php if($post['status'] == 'on_moderation'): ?>
                                     <form action="suggested_posts.php?group_id=<?php echo $group_id; ?>" method="POST">
