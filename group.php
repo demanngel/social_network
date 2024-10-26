@@ -54,15 +54,38 @@ try {
         if (isset($_POST['add_post'])) {
             $post_content = $_POST['post_content'];
             $topic_id = intval($_POST['topic_id']);
-            $sql = "INSERT INTO group_suggested_posts (group_id, user_id, content, status, topic_id) VALUES (?, ?, ?, 'on_moderation', ?)";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('iisi', $group_id, $user_id, $post_content, $topic_id);
-                $stmt->execute();
-                $stmt->close();
-                header("Location: group.php?id=$group_id");
-                exit();
+
+            if (isset($_FILES['post_image']) && $_FILES['post_image']['error'] === UPLOAD_ERR_OK) {
+                $image_data = file_get_contents($_FILES['post_image']['tmp_name']);
+
+                $sql_image = "INSERT INTO images (image_data) VALUES (?)";
+                if ($stmt_image = $conn->prepare($sql_image)) {
+                    $stmt_image->bind_param('b', $null);
+
+                    $stmt_image->send_long_data(0, $image_data);
+
+                    if ($stmt_image->execute()) {
+                        $image_id = $stmt_image->insert_id;
+                        $stmt_image->close();
+                    } else {
+                        throw new Exception("Ошибка при выполнении запроса на добавление изображения: " . $stmt_image->error);
+                    }
+                } else {
+                    throw new Exception("Ошибка при подготовке запроса на добавление изображения: " . $conn->error);
+                }
+
+                $sql_post = "INSERT INTO group_suggested_posts (group_id, user_id, content, status, topic_id, image_id) VALUES (?, ?, ?, 'on_moderation', ?, ?)";
+                if ($stmt_post = $conn->prepare($sql_post)) {
+                    $stmt_post->bind_param('iisii', $group_id, $user_id, $post_content, $topic_id, $image_id);
+                    $stmt_post->execute();
+                    $stmt_post->close();
+                    header("Location: group.php?id=$group_id");
+                    exit();
+                } else {
+                    throw new Exception("Ошибка при подготовке запроса на добавление поста: " . $conn->error);
+                }
             } else {
-                throw new Exception("Ошибка при добавлении поста: " . $conn->error);
+                throw new Exception('Ошибка загрузки файла: ' . $_FILES['post_image']['error']);
             }
         }
 
@@ -135,7 +158,7 @@ try {
         }
     }
 
-    $sql = "SELECT p.id, p.content, p.created_at
+    $sql = "SELECT p.id, p.content, p.created_at, p.image_id
             FROM group_approved_posts AS p
             WHERE p.group_id = ? AND p.content LIKE ?
             ORDER BY p.created_at DESC";
@@ -207,7 +230,7 @@ try {
     </div>
 
     <?php if ($is_member): ?>
-        <form action="group.php?id=<?php echo $group_id; ?>" method="POST" class="add_post_container">
+        <form action="group.php?id=<?php echo $group_id; ?>" method="POST" enctype="multipart/form-data" class="add_post_container">
             <label for="topic">Topic:</label>
             <select name="topic_id" id="topic" class="topic">
                 <?php
@@ -219,6 +242,7 @@ try {
                 <?php endwhile; ?>
             </select>
             <textarea name="post_content" class="post_content" required></textarea>
+            <input type="file" name="post_image" id="post_image" accept="image/*"">
             <button type="submit" name="add_post">Add post</button>
         </form>
 
@@ -241,6 +265,9 @@ try {
                         <div class="post-content">
                             <p><?php echo htmlspecialchars($post['content']); ?></p>
                         </div>
+                        <?php if ($post['image_id']!=null): ?>
+                            <img src="display_image.php?id=<?php echo htmlspecialchars($post['image_id']);?>" />
+                        <?php endif; ?>
                         <div class="post-date">
                             <p><?php echo htmlspecialchars($post['created_at']); ?></p>
                         </div>

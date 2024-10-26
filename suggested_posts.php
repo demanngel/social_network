@@ -12,7 +12,7 @@ try {
     $user_role = $_SESSION['user_role'] ?? 'user';
 
     if ($user_role == 'moderator') {
-    $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at, p.status, u.rating, tp.name AS topic,
+    $sql = "SELECT p.id, p.content, p.user_id, u.username AS author, p.created_at, p.status, u.rating, tp.name AS topic, p.image_id,
         (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'approved' AND group_id = ?) AS approved_count,
         (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'rejected' AND group_id = ?) AS rejected_count,
         (SELECT COUNT(*) FROM group_suggested_posts WHERE user_id = p.user_id AND status = 'on_moderation' AND group_id = ?) AS on_moderation_count,
@@ -38,6 +38,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $post_id = intval($_POST['post_id']);
         $user_post_id = intval($_POST['user_id']);
+        $image_id = intval($_POST['image_id']);
         $comment = $_POST['comment'] ?? null;
         $action = $_POST['action'];
         $approved_count = $_POST['approved_count'];
@@ -45,8 +46,8 @@ try {
         $on_moderation_count = $_POST['on_moderation_count'];
 
         if ($action === 'approve') {
-            $sql = "INSERT INTO group_approved_posts (group_id, content) 
-                        SELECT group_id, content 
+            $sql = "INSERT INTO group_approved_posts (group_id, content, image_id) 
+                        SELECT group_id, content, image_id 
                         FROM group_suggested_posts WHERE id = ?";
             if ($stmt = $conn->prepare($sql)) {
                 $stmt->bind_param('i', $post_id);
@@ -149,7 +150,7 @@ try {
     }
 }
     if($user_role == 'user') {
-        $sql = "SELECT id, content, user_id, created_at, status, 
+        $sql = "SELECT id, content, user_id, created_at, status, image_id,
                 (SELECT comment FROM post_history WHERE post_id = group_suggested_posts.id ORDER BY id DESC LIMIT 1) AS comment
                 FROM group_suggested_posts
                 WHERE group_id = ? AND user_id = ? AND status != ''
@@ -223,6 +224,9 @@ try {
                                 <div class="post-status">
                                     <p>User rating: <?php echo htmlspecialchars($post['rating']); ?></p>
                                 </div>
+                                <?php if ($post['image_id']!=null): ?>
+                                    <img src="display_image.php?id=<?php echo htmlspecialchars($post['image_id']);?>" />
+                                <?php endif; ?>
                                 <div class="post-status">
                                     <p>Weight: <?php echo htmlspecialchars($post['final_weight']); ?></p>
                                 </div>
@@ -236,6 +240,7 @@ try {
                                         <input type="hidden" name="approved_count" value="<?php echo $post['approved_count']; ?>">
                                         <input type="hidden" name="rejected_count" value="<?php echo $post['rejected_count']; ?>">
                                         <input type="hidden" name="on_moderation_count" value="<?php echo $post['on_moderation_count']; ?>">
+                                        <input type="hidden" name="image_id" value="<?php echo $post['image_id']; ?>">
 
                                         <input type="hidden" name="action" value="">
 
@@ -274,6 +279,11 @@ try {
                         </div>
                         <div class="post-status">
                             <p>Status: <?php echo htmlspecialchars($post['status']); ?></p>
+                        </div>
+                        <div class="post-image">
+                            <?php if ($post['image_id']!=null): ?>
+                                <img src="display_image.php?id=<?php echo htmlspecialchars($post['image_id']);?>" />
+                            <?php endif; ?>
                         </div>
                         <?php if (!empty($post['comment'])): ?>
                             <div class="post-comment">

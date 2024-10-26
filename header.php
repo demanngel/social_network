@@ -57,6 +57,10 @@ if (isset($_SESSION['user_id'])) {
                 <a href="groups.php" class="navel">Groups</a>
             <?php endif; ?>
 
+            <?php if ($user_role == 'user'): ?>
+                <a href="profile.php" class="navel">Profile</a>
+            <?php endif; ?>
+
             <a href="logout.php" class="navel">Logout</a>
 
             <?php if ($user_role == 'guest'): ?>
