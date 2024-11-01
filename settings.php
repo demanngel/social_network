@@ -83,18 +83,22 @@ try {
 
     if (isset($_POST['update_weights'])) {
         foreach ($_POST['weights'] as $id => $weight) {
-            $sql = "UPDATE topics SET weight = ? WHERE id = ?";
+            $sql = "CALL UpdateTopicWeight(?, ?)";
             if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('di', $weight, $id);
+                $stmt->bind_param('id', $id, $weight);
                 $stmt->execute();
+                if ($stmt->errno) {
+                    $notification = 'Error: ' . htmlspecialchars($stmt->error);
+                }
                 $stmt->close();
             } else {
-                throw new Exception("Ошибка при обновлении веса тематики: " . $stmt->error);
+                throw new Exception("Ошибка при подготовке запроса: " . $conn->error);
             }
         }
         header("Location: " . $_SERVER['PHP_SELF']);
         exit();
     }
+
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['weight_factor1'])) {
         $weightFactor1 = isset($_POST['weight_factor1']) ? floatval($_POST['weight_factor1']) : 0;
@@ -112,7 +116,7 @@ try {
         }
     }
 } catch (Exception $e) {
-    header('Location: error.php?message=' . urlencode($e->getMessage()));
+    header('Location: error.php?message=' . urlencode($e->getMessage()) . '1');
     exit();
 }
 ?>
@@ -154,9 +158,11 @@ try {
     <form method="POST" class="update_weights_form">
         <?php foreach ($topics as $topic): ?>
         <div class="topic_container">
-            <?= htmlspecialchars($topic['name']) ?>
+            <p>
+                <?= htmlspecialchars($topic['name']) ?>
+            </p>
             <div class="update_topic_container">
-                <input class="topic_weight" type="number" name="weights[<?= $topic['id'] ?>]" value="<?= htmlspecialchars($topic['weight']) ?>" min="0" max="1" step="0.01">
+                <input class="topic_weight" type="number" name="weights[<?= $topic['id'] ?>]" value="<?= htmlspecialchars($topic['weight']) ?>"  step="0.01">
                 <div class="back-button action-button">
                     <a href="?delete_topic=<?= $topic['id'] ?>">🗑</a>
                 </div>
