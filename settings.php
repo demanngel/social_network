@@ -152,7 +152,9 @@ try {
     </form>
 
     <form method="POST" class="update_weights_form">
-        <?php foreach ($topics as $topic): ?>
+        <p>
+            <?php foreach ($topics as $topic): ?>
+        </p>
         <div class="topic_container">
             <?= htmlspecialchars($topic['name']) ?>
             <div class="update_topic_container">

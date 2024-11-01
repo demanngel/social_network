@@ -28,15 +28,19 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image'])) {
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
         $file = $_FILES['profile_image'];
+
+        $max_file_size = 2 * 1024 * 1024;
 
         if ($file['error'] === UPLOAD_ERR_NO_FILE) {
             $notification = "No file was uploaded.";
+        } elseif ($file['size'] > $max_file_size) {
+            $notification = "File size exceeds the maximum limit of 2 MB.";
         } elseif (!in_array($file['type'], $allowed_types)) {
-            $notification = "Only JPG, PNG, and GIF files are allowed.";
+            $notification = "File size exceeds the maximum limit of 2 MB.";
         } elseif ($file['error'] !== UPLOAD_ERR_OK) {
-            $notification = "An error occurred while uploading the file.";
+            $notification = "An error occurred while uploading the file. Error Code: " . $file['error'];
         } else {
             $target_dir = "./uploads/";
 
@@ -53,34 +57,38 @@ try {
             $target_file = $target_dir . basename($file['name']);
 
             if (move_uploaded_file($file['tmp_name'], $target_file)) {
-                $update_sql = "UPDATE users SET profile_image_path = ? WHERE id = ?";
-                if ($update_stmt = $conn->prepare($update_sql)) {
-                    $update_stmt->bind_param('si', $target_file, $user_id);
-                    $update_stmt->execute();
-                    $update_stmt->close();
+                if (getimagesize($target_file) === false) {
+                    unlink($target_file);
+                    $notification = "Uploaded file is not a valid image or is corrupted.";
+                } else {
+                    $update_sql = "UPDATE users SET profile_image_path = ? WHERE id = ?";
+                    if ($update_stmt = $conn->prepare($update_sql)) {
+                        $update_stmt->bind_param('si', $target_file, $user_id);
+                        $update_stmt->execute();
+                        $update_stmt->close();
+                    }
+                    $profile_image_path = $target_file;
+                    $notification = "File uploaded successfully!";
                 }
-                $profile_image_path = $target_file;
-                $notification = "File uploaded successfully!";
             } else {
                 throw new Exception("File saving error. Check file permissions.");
             }
         }
     }
 
+
+
 } catch (Exception $e) {
-    header('Location: error.php?message=' . urlencode($e->getMessage()));
-    exit();
+    $notification = "Error: " . htmlspecialchars($e->getMessage());
 }
 ?>
 
 <div class="container profile-container">
     <h1>Profile</h1>
     <div class="profile-info-container">
-        <div class="profile-image" style="width: 150px; height: 150px; background-color: #ccc; display: flex; align-items: center; justify-content: center;">
+        <div class="profile-image"">
             <?php if ($profile_image_path): ?>
-                <img src="<?php echo htmlspecialchars($profile_image_path); ?>" style="width: 100%; height: 100%; object-fit: cover;">
-            <?php else: ?>
-                <span style="color: #777;">No Image</span>
+                <img src="<?php echo htmlspecialchars($profile_image_path); ?>"">
             <?php endif; ?>
         </div>
         <div>
@@ -89,8 +97,6 @@ try {
             <p>Rating: <?php echo htmlspecialchars($rating); ?></p>
         </div>
     </div>
-
-
 
     <form action="profile.php" method="POST" enctype="multipart/form-data">
         <label for="profile_image">Upload Profile Image:</label>

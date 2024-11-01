@@ -67,7 +67,7 @@ try {
     <div class="users">
         <?php while ($user = $result->fetch_assoc()): ?>
             <div class="user">
-                <span><?php echo htmlspecialchars($user['username']); ?> (<?php echo htmlspecialchars($user['role']); ?>)</span>
+                <p><?php echo htmlspecialchars($user['username']); ?> (<?php echo htmlspecialchars($user['role']); ?>)</p>
                 <div class="actions">
                     <form action="edit_user.php" method="GET" style="display:inline;">
                         <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">

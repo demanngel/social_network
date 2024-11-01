@@ -1,0 +1,122 @@
+body {
+    background: linear-gradient(135deg, #121212, #1c1c1c);
+}
+
+.container {
+    background: #1f1f1f;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    border: 2px solid #424242;
+}
+
+h1 {
+    color: #ffab40;
+}
+
+p, label, h2, h1 {
+    color: #ffffff;
+}
+
+input {
+    border: 1px solid #555;
+    background-color: #333;
+    color: #ffffff;
+}
+
+input:focus {
+    border-color: #ff7043;
+    box-shadow: 0 0 8px rgba(255, 112, 67, 0.5);
+}
+
+textarea, form textarea {
+    border: 1px solid #555;
+    background-color: #333;
+    color: #ffffff;
+}
+
+button, .back-button {
+    background: linear-gradient(135deg, #ff5722, #ff7043);
+    color: #ffffff;
+}
+
+button:hover, .back-button {
+    background: linear-gradient(135deg, #e64a19, #ff5722);
+}
+
+button[name="leave_group"] {
+    background: linear-gradient(135deg, #6a1b9a, #7b1fa2);
+}
+
+button[name="leave_group"]:hover {
+    background: linear-gradient(135deg, #4a058a, #7415bc);
+}
+
+a {
+    color: #ffab40; /* Золотистый цвет для ссылок */
+}
+
+table, th, td {
+    border: 1px solid #555;
+}
+
+th {
+    background-color: #424242;
+    color: #ffffff;
+}
+
+table tr:nth-child(even) {
+    background-color: #333;
+}
+
+.logout-form button {
+    background-color: #424242;
+    border: 1px solid #555;
+    color: #ffffff;
+}
+
+.logout-form button:hover {
+    background-color: #555;
+}
+
+.search-button {
+    color: #ffab40; /* Золотистый цвет для кнопок поиска */
+}
+
+.navbar {
+    background-color: rgba(106, 27, 154, 0.9);
+}
+
+.navel {
+    color: #FFFFFF;
+}
+
+.radio-label {
+    color: #ffffff; /* Белый цвет для меток радио */
+}
+
+.post-author {
+    color: #ffab40; /* Золотистый цвет для авторов постов */
+}
+
+.back-button a {
+    color: #ffffff;
+}
+
+select {
+    border: 1px solid #555;
+    background-color: #333;
+    color: #ffffff;
+}
+
+select:hover {
+    border-color: #ff7043;
+}
+
+select:focus {
+    outline: none;
+    border-color: #ff7043;
+    background-color: #444;
+}
+
+.profile-image {
+    background-color: #555; /* Темный фон для изображения профиля */
+}

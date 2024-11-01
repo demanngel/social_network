@@ -2,7 +2,6 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #f3e5f5, #fbe9e7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -19,11 +18,8 @@ p, h2 {
 .container {
     width: 100%;
     max-width: 400px;
-    background: #ffffff;
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    border: 2px solid #d1c4e9;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -40,7 +36,6 @@ p, h2 {
 
 h1 {
     font-size: 32px;
-    color: #6a1b9a;
     font-weight: 600;
     margin: 10px 0;
 }
@@ -55,7 +50,6 @@ form {
 input {
     width: 100%;
     padding: 12px;
-    border: 1px solid #e0e0e0;
     border-radius: 8px;
     font-size: 16px;
     transition: border-color 0.3s, box-shadow 0.3s;
@@ -64,8 +58,6 @@ input {
 }
 
 input:focus {
-    border-color: #ff7043;
-    box-shadow: 0 0 8px rgba(255, 112, 67, 0.25);
     outline: none;
 }
 
@@ -73,7 +65,6 @@ textarea, form textarea {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
-    border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 16px;
     resize: vertical;
@@ -82,8 +73,6 @@ textarea, form textarea {
 
 button, .back-button {
     padding: 10px;
-    background: linear-gradient(135deg, #ff7043, #ff5722);
-    color: #ffffff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -93,20 +82,7 @@ button, .back-button {
     box-sizing: border-box;
 }
 
-button:hover , .back-button {
-    background: linear-gradient(135deg, #ff5722, #e64a19);
-}
-
-button[name="leave_group"] {
-    background: linear-gradient(135deg, #7415bc, #6920af);
-}
-
-button[name="leave_group"]:hover {
-    background: linear-gradient(135deg, #6920af, #4a058a);
-}
-
 a {
-    color: #ff7043;
     text-decoration: none;
     font-weight: 500;
 }
@@ -124,21 +100,9 @@ table {
     border-collapse: collapse;
 }
 
-table, th, td {
-    border: 1px solid #ddd;
-}
-
 th, td {
     padding: 10px;
     text-align: left;
-}
-
-th {
-    background-color: #f5f5f5;
-}
-
-table tr:nth-child(even) {
-    background-color: #f2f2f2;
 }
 
 .logout-form {
@@ -152,24 +116,9 @@ table tr:nth-child(even) {
 }
 
 .logout-form button {
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
-    color: #333;
     padding: 10px 20px;
     cursor: pointer;
     border-radius: 8px;
-}
-
-.logout-form button:hover {
-    background-color: #e2e6ea;
-}
-
-.success {
-    color: green;
-}
-
-.error {
-    color: red;
 }
 
 .search-container {
@@ -180,7 +129,6 @@ table tr:nth-child(even) {
 
 .search-button {
     background: transparent;
-    color: #6a1b9a;
     width: 0;
     height: 0;
     padding: 12px 20px 0 0;
@@ -208,14 +156,12 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(106, 27, 154, 0.7);
     backdrop-filter: blur(10px);
     width: 100%;
 }
 
 .navel {
     text-decoration: none;
-    color: #FFFFFF;
     margin: 10px 50px;
     font-size: 20px;
     text-transform: uppercase;
@@ -231,7 +177,6 @@ header {
     display: flex;
     align-items: center;
     font-size: 16px;
-    color: #333;
 }
 
 .radio-label input[type="radio"] {
@@ -293,7 +238,6 @@ header {
 
 .post-author {
     align-self: start;
-    color: #6a1b9a;
 }
 
 .post-date {
@@ -350,7 +294,6 @@ header {
 }
 
 .back-button a {
-    color: #ffffff;
     text-decoration: none;
 }
 
@@ -384,22 +327,10 @@ header {
 }
 
 select {
-    padding: 10px;
-    border: 1px solid #ccc;
+    padding: 5px;
     border-radius: 5px;
     font-size: 16px;
-    background-color: #f9f9f9;
     transition: border-color 0.3s ease;
-}
-
-select:hover {
-    border-color: #007bff;
-}
-
-select:focus {
-    outline: none;
-    border-color: #007bff;
-    background-color: #fff;
 }
 
 .transfer-actions {
@@ -524,6 +455,57 @@ select:focus {
 }
 
 img {
-    width: 300px;
-    align-self: center;
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+}
+
+.profile-image {
+    width: 200px;
+    height: 200px;
+}
+
+.theme-switcher {
+    display: flex;
+    align-items: center;
+}
+
+.slider-button {
+    background-color: #ccc;
+    border: none;
+    width: 60px;
+    height: 30px;
+    border-radius: 30px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.4s;
+}
+
+.slider-button .slider {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #fff;
+    transition: transform 0.4s;
+}
+
+/* Включенное состояние */
+.slider-button.active {
+    background-color: #4CAF50;
+}
+
+.slider-button.active .slider {
+    transform: translateX(30px);
+}
+
+.theme-switcher {
+    width: max-content;
+}
+
+.font-size-selector {
+    width: max-content;
+    margin-left: 10px;
 }
