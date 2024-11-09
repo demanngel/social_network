@@ -158,6 +158,25 @@ if (isset($_SESSION['user_id'])) {
             font-size: var(--font-size);
         }
     </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelector(".theme-switcher button").addEventListener("click", function(e) {
+                e.preventDefault();
+
+                fetch('update_theme.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const themeLink = document.querySelector('link[rel="stylesheet"][href*="-theme.css"]');
+                        themeLink.href = data.theme === 'dark' ? 'dark-theme.css' : 'light-theme.css';
+                    })
+                    .catch(error => console.error("Error updating theme:", error));
+            });
+        });
+
+    </script>
 </head>
 <body>
 <header>
@@ -179,11 +198,11 @@ if (isset($_SESSION['user_id'])) {
                 <a href="loginForm.php" class="navel">Login</a>
                 <a href="registerForm.php" class="navel">Register</a>
             <?php endif; ?>
-            <form method="post" class="theme-switcher">
-                <button type="submit" name="toggle_theme" class="slider-button <?php echo $theme === 'dark' ? 'active' : ''; ?>">
+            <div class="theme-switcher">
+                <button class="slider-button <?php echo $theme === 'dark' ? 'active' : ''; ?>">
                     <span class="slider round"></span>
                 </button>
-            </form>
+            </div>
             <form method="post" class="font-size-selector">
                 <select name="font_size" onChange="this.form.submit()">
                     <option value="small" <?php echo $font_size === 'small' ? 'selected' : ''; ?>>Small</option>
