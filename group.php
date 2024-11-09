@@ -2,6 +2,8 @@
 include './db.php';
 include 'header.php';
 
+$cache_dir = 'cache/';
+
 try {
     if ($conn->connect_error) {
         throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
@@ -18,25 +20,42 @@ try {
     $group_id = intval($_GET['id']);
     $search_term = $_GET['search'] ?? '';
 
-    // Используем один запрос для получения данных о группе и проверок
-    $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
-            COUNT(m.user_id) AS subscriber_count,
-            (SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?) AS is_member
-            FROM `groups` AS g
-            JOIN users AS u ON g.created_by = u.id
-            LEFT JOIN group_members AS m ON g.id = m.group_id
-            WHERE g.id = ?
-            GROUP BY g.id, g.name, g.description, u.username
-    ";
+    $group_cache_file = $cache_dir . "group_$group_id.json";
+    $posts_cache_file = $cache_dir . "posts_$group_id.json";
+    $cache_lifetime = 3600; // 1 hour cache lifetime
 
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param('iii', $group_id, $user_id, $group_id);
-        $stmt->execute();
-        $group_result = $stmt->get_result();
-        $group = $group_result->fetch_assoc();
-        $stmt->close();
-    } else {
-        throw new Exception("Ошибка при получении информации о группе: " . $conn->error);
+    // Function to get cached data
+    function get_cached_data($file, $lifetime) {
+        if (file_exists($file) && (filemtime($file) + $lifetime > time())) {
+            return json_decode(file_get_contents($file), true);
+        }
+        return false;
+    }
+
+    // Используем один запрос для получения данных о группе и проверок
+    $group = get_cached_data($group_cache_file, $cache_lifetime);
+    if (!$group) {
+        $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
+                COUNT(m.user_id) AS subscriber_count,
+                (SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?) AS is_member
+                FROM `groups` AS g
+                JOIN users AS u ON g.created_by = u.id
+                LEFT JOIN group_members AS m ON g.id = m.group_id
+                WHERE g.id = ?
+                GROUP BY g.id, g.name, g.description, u.username";
+
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param('iii', $group_id, $user_id, $group_id);
+            $stmt->execute();
+            $group_result = $stmt->get_result();
+            $group = $group_result->fetch_assoc();
+            $stmt->close();
+
+            // Cache the group data
+            file_put_contents($group_cache_file, json_encode($group));
+        } else {
+            throw new Exception("Ошибка при получении информации о группе: " . $conn->error);
+        }
     }
 
     if (!$group) {
