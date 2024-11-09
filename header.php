@@ -2,6 +2,43 @@
 session_start();
 include './db.php';
 
+define('SECRET_KEY', 'your-unique-secret-key');
+define('SALT', 'your-unique-salt');
+
+$key = sodium_crypto_pwhash(
+    SODIUM_CRYPTO_SECRETBOX_KEYBYTES,
+    SECRET_KEY,
+    SALT,
+    SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE,
+    SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE
+);
+
+$nonceLength = SODIUM_CRYPTO_SECRETBOX_NONCEBYTES;
+
+function encryptData($data, $key) {
+    $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+    $encryptedData = sodium_crypto_secretbox($data, $nonce, $key);
+    return base64_encode($nonce . $encryptedData);
+}
+
+function decryptData($encryptedData, $key) {
+    $decoded = base64_decode($encryptedData);
+    if ($decoded === false) {
+        return false;
+    }
+
+    $nonce = substr($decoded, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+    $encryptedData = substr($decoded, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+
+    $decryptedData = sodium_crypto_secretbox_open($encryptedData, $nonce, $key);
+
+    if ($decryptedData === false) {
+        return false;
+    }
+
+    return $decryptedData;
+}
+
 if (!isset($_SESSION['theme'])) {
     $_SESSION['theme'] = 'light';
 }
@@ -18,7 +55,7 @@ if (isset($_POST['font_size'])) {
     $font_size = $_POST['font_size'];
     setcookie('font_size', $font_size, time() + (86400 * 30), "/");
 
-    $history = isset($_COOKIE['font_size_history']) ? json_decode($_COOKIE['font_size_history'], true) : [];
+    $history = isset($_COOKIE['font_size_history']) ? json_decode(decryptData($_COOKIE['font_size_history'], $key), true) : [];
     $current_time = date('Y-m-d H:i:s');
 
     $history[] = ['font_size' => $font_size, 'time' => $current_time];
@@ -27,8 +64,9 @@ if (isset($_POST['font_size'])) {
         array_shift($history);
     }
 
-    setcookie('font_size_history', json_encode($history), time() + (86400 * 30), "/");
-    setcookie('selected_font_size_history', json_encode($history[4]), time() + (86400 * 30), "/");
+    setcookie('font_size_history', encryptData(json_encode($history), $key), time() + (86400 * 30), "/");
+
+    setcookie('selected_font_size_history', encryptData(json_encode($history[4]), $key), time() + (86400 * 30), "/");
 
     $font_size_history = $history;
     $selected_font_size_history = end($history);
@@ -40,7 +78,7 @@ if (isset($_POST['font_size'])) {
 if (isset($_POST['font_size_history'])) {
     $selected_entry = json_decode($_POST['font_size_history'], true);
 
-    setcookie('selected_font_size_history', json_encode($selected_entry), time() + (86400 * 30), "/");
+    setcookie('selected_font_size_history', encryptData(json_encode($selected_entry), $key), time() + (86400 * 30), "/");
 
     $font_size = $selected_entry['font_size'];
     setcookie('font_size', $font_size, time() + (86400 * 30), "/");
@@ -51,8 +89,8 @@ if (isset($_POST['font_size_history'])) {
     exit();
 }
 
-$font_size_history = isset($_COOKIE['font_size_history']) ? json_decode($_COOKIE['font_size_history'], true) : [];
-$selected_font_size_history = isset($_COOKIE['selected_font_size_history']) ? json_decode($_COOKIE['selected_font_size_history'], true) : null;
+$font_size_history = isset($_COOKIE['font_size_history']) ? json_decode(decryptData($_COOKIE['font_size_history'], $key), true) : [];
+$selected_font_size_history = isset($_COOKIE['selected_font_size_history']) ? json_decode(decryptData($_COOKIE['selected_font_size_history'], $key), true) : null;
 
 if (isset($_COOKIE['font_size'])) {
     $font_size = $selected_font_size_history ? $selected_font_size_history['font_size'] : $_COOKIE['font_size'];
@@ -60,6 +98,7 @@ if (isset($_COOKIE['font_size'])) {
     $font_size = 'medium';
     setcookie('font_size', $font_size, time() + (86400 * 30), "/");
 }
+
 
 if (isset($_SESSION['user_id'])) {
     $user_id = intval($_SESSION['user_id']);
@@ -152,12 +191,9 @@ if (isset($_SESSION['user_id'])) {
                     <option value="large" <?php echo $font_size === 'large' ? 'selected' : ''; ?>>Large</option>
                 </select>
             </form>
-            <?php if (!empty($font_size_history)): ?>
+           <!-- --><?php /*if (!empty($font_size_history)): */?>
                 <form method="post" class="font-size-history" style="width: max-content">
                     <select name="font_size_history" onChange="this.form.submit()">
-                        <?php
-/*                        $selected_font_size_history = isset($_COOKIE['selected_font_size_history']) ? json_decode($_COOKIE['selected_font_size_history'], true) : null;
-                        */?>
                         <?php foreach ($font_size_history as $entry): ?>
                             <option value='<?php echo json_encode($entry); ?>'
                                 <?php
@@ -171,7 +207,7 @@ if (isset($_SESSION['user_id'])) {
                         <?php endforeach; ?>
                     </select>
                 </form>
-            <?php endif; ?>
+            <?php /*endif; */?>
         </nav>
     </div>
 </header>
