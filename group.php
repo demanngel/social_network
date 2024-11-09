@@ -1,4 +1,4 @@
- <?php
+<?php
 include './db.php';
 include 'header.php';
 
@@ -18,13 +18,19 @@ try {
     $group_id = intval($_GET['id']);
     $search_term = $_GET['search'] ?? '';
 
-    $sql = "SELECT g.id, g.name, g.description, u.username AS creator
+    // Используем один запрос для получения данных о группе и проверок
+    $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
+            COUNT(m.user_id) AS subscriber_count,
+            (SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?) AS is_member
             FROM `groups` AS g
             JOIN users AS u ON g.created_by = u.id
-            WHERE g.id = ?";
+            LEFT JOIN group_members AS m ON g.id = m.group_id
+            WHERE g.id = ?
+            GROUP BY g.id, g.name, g.description, u.username
+    ";
 
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param('i', $group_id);
+        $stmt->bind_param('iii', $group_id, $user_id, $group_id);
         $stmt->execute();
         $group_result = $stmt->get_result();
         $group = $group_result->fetch_assoc();
@@ -37,155 +43,101 @@ try {
         throw new Exception("Группа не найдена.");
     }
 
-    $is_member = false;
-    if ($user_role == 'user') {
-        $sql = "SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?";
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('ii', $group_id, $user_id);
-            $stmt->execute();
-            $stmt->bind_result($is_member_count);
-            $stmt->fetch();
-            $is_member = $is_member_count > 0;
-            $stmt->close();
-        } else {
-            throw new Exception("Ошибка при проверке членства: " . $conn->error);
-        }
+    // Проверка членства и других действий
+    $is_member = $group['is_member'] > 0;
 
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['add_post'])) {
+            // Обработка добавления поста
             $post_content = $_POST['post_content'];
             $topic_id = intval($_POST['topic_id']);
 
             if (isset($_FILES['post_image']) && $_FILES['post_image']['error'] === UPLOAD_ERR_OK) {
                 $image_data = file_get_contents($_FILES['post_image']['tmp_name']);
-
                 $sql_image = "INSERT INTO images (image_data) VALUES (?)";
                 if ($stmt_image = $conn->prepare($sql_image)) {
                     $stmt_image->bind_param('b', $null);
-
                     $stmt_image->send_long_data(0, $image_data);
-
                     if ($stmt_image->execute()) {
                         $image_id = $stmt_image->insert_id;
                         $stmt_image->close();
-                    } else {
-                        throw new Exception("Ошибка при выполнении запроса на добавление изображения: " . $stmt_image->error);
-                    }
-                } else {
-                    throw new Exception("Ошибка при подготовке запроса на добавление изображения: " . $conn->error);
-                }
 
-                $sql_post = "INSERT INTO group_suggested_posts (group_id, user_id, content, status, topic_id, image_id) VALUES (?, ?, ?, 'on_moderation', ?, ?)";
-                if ($stmt_post = $conn->prepare($sql_post)) {
-                    $stmt_post->bind_param('iisii', $group_id, $user_id, $post_content, $topic_id, $image_id);
-                    $stmt_post->execute();
-                    $stmt_post->close();
-                    header("Location: group.php?id=$group_id");
-                    exit();
-                } else {
-                    throw new Exception("Ошибка при подготовке запроса на добавление поста: " . $conn->error);
+                        $sql_post = "INSERT INTO group_suggested_posts (group_id, user_id, content, status, topic_id, image_id)
+                                     VALUES (?, ?, ?, 'on_moderation', ?, ?)";
+                        if ($stmt_post = $conn->prepare($sql_post)) {
+                            $stmt_post->bind_param('iisii', $group_id, $user_id, $post_content, $topic_id, $image_id);
+                            $stmt_post->execute();
+                            $stmt_post->close();
+                            header("Location: group.php?id=$group_id");
+                            exit();
+                        } else {
+                            throw new Exception("Ошибка при добавлении поста: " . $conn->error);
+                        }
+                    } else {
+                        throw new Exception("Ошибка при загрузке изображения: " . $stmt_image->error);
+                    }
                 }
-            } else {
-                throw new Exception('Ошибка загрузки файла: ' . $_FILES['post_image']['error']);
             }
         }
 
+        // Обработка действий с группой
         if (isset($_POST['join_group'])) {
             $sql = "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('ii', $group_id, $user_id);
-                $stmt->execute();
-                $stmt->close();
-                header('Location: group.php?id=' . $group_id);
-                exit();
-            } else {
-                throw new Exception("Ошибка при добавлении пользователя в группу: " . $conn->error);
-            }
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ii', $group_id, $user_id);
+            $stmt->execute();
+            $stmt->close();
+            header("Location: group.php?id=$group_id");
+            exit();
         }
 
         if (isset($_POST['leave_group'])) {
             $sql = "DELETE FROM group_members WHERE group_id = ? AND user_id = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('ii', $group_id, $user_id);
-                $stmt->execute();
-                $stmt->close();
-                header('Location: group.php?id=' . $group_id);
-                exit();
-            } else {
-                throw new Exception("Ошибка при выходе из группы: " . $conn->error);
-            }
-        }
-    }
-
-    if ($user_role == 'moderator') {
-        if (isset($_POST['delete_post'])) {
-            $post_id = intval($_POST['post_id']);
-            $sql = "DELETE FROM group_approved_posts WHERE id = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('i', $post_id);
-                $stmt->execute();
-                $stmt->close();
-                header("Location: group.php?id=$group_id");
-                exit();
-            } else {
-                throw new Exception("Ошибка при удалении поста: " . $conn->error);
-            }
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ii', $group_id, $user_id);
+            $stmt->execute();
+            $stmt->close();
+            header("Location: group.php?id=$group_id");
+            exit();
         }
 
-        if (isset($_POST['delete_group'])) {
+        if ($user_role == 'moderator' && isset($_POST['delete_group'])) {
+            // Удаление группы
             $sql = "DELETE FROM `groups` WHERE id = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('i', $group_id);
-                $stmt->execute();
-                $stmt->close();
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('i', $group_id);
+            $stmt->execute();
+            $stmt->close();
 
-                $sql = "DELETE FROM group_members WHERE group_id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $group_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-                $sql = "DELETE FROM group_suggested_posts WHERE group_id = ?";
-                if ($stmt = $conn->prepare($sql)) {
-                    $stmt->bind_param('i', $group_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-                header("Location: groups.php");
-                exit();
-            } else {
-                throw new Exception("Ошибка при удалении группы: " . $conn->error);
-            }
+            // Дополнительное удаление
+            $sql = "DELETE FROM group_members WHERE group_id = ?; DELETE FROM group_suggested_posts WHERE group_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ii', $group_id, $group_id);
+            $stmt->execute();
+            $stmt->close();
+            header("Location: groups.php");
+            exit();
         }
     }
 
+    // Поиск постов
     $sql = "SELECT p.id, p.content, p.created_at, p.image_id
             FROM group_approved_posts AS p
             WHERE p.group_id = ? AND p.content LIKE ?
             ORDER BY p.created_at DESC";
+    $stmt = $conn->prepare($sql);
+    $search_param = '%' . $search_term . '%';
+    $stmt->bind_param('is', $group_id, $search_param);
+    $stmt->execute();
+    $posts_result = $stmt->get_result();
+    $stmt->close();
 
-    if ($stmt = $conn->prepare($sql)) {
-        $search_param = '%' . $search_term . '%';
-        $stmt->bind_param('is', $group_id, $search_param);
-        $stmt->execute();
-        $posts_result = $stmt->get_result();
-        $stmt->close();
-    }
-
-    $sql = "SELECT COUNT(*) AS subscriber_count FROM group_members WHERE group_id = ?";
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param('i', $group_id);
-        $stmt->execute();
-        $stmt->bind_result($subscriber_count);
-        $stmt->fetch();
-        $stmt->close();
-    } else {
-        throw new Exception("Ошибка при получении количества подписчиков: " . $conn->error);
-    }
 } catch (Exception $e) {
     header('Location: error.php?message=' . urlencode($e->getMessage()));
     exit();
 }
 ?>
+
 
 <div class="container groups">
     <div class="back-button action-button">
@@ -196,7 +148,7 @@ try {
         <div class="group_info">
             <p>Description: <?php echo htmlspecialchars($group['description']); ?></p>
             <p>Created by: <?php echo htmlspecialchars($group['creator']); ?></p>
-            <p>Subscribers: <a href="subscribers.php?group_id=<?php echo $group_id; ?>"><?php echo $subscriber_count; ?></a></p>
+            <p>Subscribers: <a href="subscribers.php?group_id=<?php echo $group_id; ?>"><?php echo $group['subscriber_count']; ?></a></p>
         </div>
         <div class="actions group-actions">
             <?php if ($user_role == 'moderator'): ?>
