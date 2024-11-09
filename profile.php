@@ -28,17 +28,37 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image'])) {
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
         $file = $_FILES['profile_image'];
 
-        $max_file_size = 2 * 1024 * 1024;
+        $sql = "SELECT mime_type FROM allowed_image_types WHERE enabled = 1";
+        $result = $conn->query($sql);
+
+        $allowed_types = [];
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $allowed_types[] = $row['mime_type'];
+            }
+        }
+
+        if (empty($allowed_types)) {
+            die("No allowed types are set in the database.");
+        }
+
+        $sql = "SELECT value FROM settings WHERE name = 'max_image_size'";
+        $result = $conn->query($sql);
+
+        $max_file_size = 2;
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $max_file_size = (int)$row['value'];
+        }
 
         if ($file['error'] === UPLOAD_ERR_NO_FILE) {
             $notification = "No file was uploaded.";
-        } elseif ($file['size'] > $max_file_size) {
-            $notification = "File size exceeds the maximum limit of 2 MB.";
+        } elseif ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['size'] > ($max_file_size * 1024 * 1024)) {
+            $notification = "File size exceeds the maximum limit of " . $max_file_size . ' MB.';
         } elseif (!in_array($file['type'], $allowed_types)) {
-            $notification = "File size exceeds the maximum limit of 2 MB.";
+            $notification = "File type not allowed.";
         } elseif ($file['error'] !== UPLOAD_ERR_OK) {
             $notification = "An error occurred while uploading the file. Error Code: " . $file['error'];
         } else {
@@ -75,6 +95,7 @@ try {
             }
         }
     }
+
 
 
 

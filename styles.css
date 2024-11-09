@@ -509,3 +509,37 @@ img {
     width: max-content;
     margin-left: 10px;
 }
+
+.mime-types input {
+    width: max-content;
+}
+
+.image-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.mime-types {
+    flex: 1 1 45%;
+    display: flex;
+    gap: 10px;
+}
+
+.mime-types p {
+    margin: 0;
+}
+
+.image-size-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.image-size-container input {
+    width: max-content;
+    margin: 0 0 0 10px;
+
+}
