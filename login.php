@@ -7,12 +7,6 @@ try {
         throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
     }
 
-    $sql = "CALL CreateUsersTable();";
-
-    if (!$conn->query($sql)) {
-        throw new Exception("Ошибка при создании таблицы: " . $conn->error);
-    }
-
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = $_POST['username'];
         $password = $_POST['password'];

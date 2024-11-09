@@ -22,9 +22,8 @@ try {
 
     $group_cache_file = $cache_dir . "group_$group_id.json";
     $posts_cache_file = $cache_dir . "posts_$group_id.json";
-    $cache_lifetime = 3600; // 1 hour cache lifetime
+    $cache_lifetime = 3600;
 
-    // Function to get cached data
     function get_cached_data($file, $lifetime) {
         if (file_exists($file) && (filemtime($file) + $lifetime > time())) {
             return json_decode(file_get_contents($file), true);
@@ -32,7 +31,6 @@ try {
         return false;
     }
 
-    // Используем один запрос для получения данных о группе и проверок
     $group = get_cached_data($group_cache_file, $cache_lifetime);
     if (!$group) {
         $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
@@ -51,7 +49,6 @@ try {
             $group = $group_result->fetch_assoc();
             $stmt->close();
 
-            // Cache the group data
             file_put_contents($group_cache_file, json_encode($group));
         } else {
             throw new Exception("Ошибка при получении информации о группе: " . $conn->error);
@@ -62,7 +59,6 @@ try {
         throw new Exception("Группа не найдена.");
     }
 
-    // Проверка членства и других действий
     $is_member = $group['is_member'] > 0;
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -99,7 +95,6 @@ try {
             }
         }
 
-        // Обработка действий с группой
         if (isset($_POST['join_group'])) {
             $sql = "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)";
             $stmt = $conn->prepare($sql);
@@ -121,14 +116,12 @@ try {
         }
 
         if ($user_role == 'moderator' && isset($_POST['delete_group'])) {
-            // Удаление группы
             $sql = "DELETE FROM `groups` WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param('i', $group_id);
             $stmt->execute();
             $stmt->close();
 
-            // Дополнительное удаление
             $sql = "DELETE FROM group_members WHERE group_id = ?; DELETE FROM group_suggested_posts WHERE group_id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param('ii', $group_id, $group_id);
@@ -139,7 +132,6 @@ try {
         }
     }
 
-    // Поиск постов
     $sql = "SELECT p.id, p.content, p.created_at, p.image_id
             FROM group_approved_posts AS p
             WHERE p.group_id = ? AND p.content LIKE ?

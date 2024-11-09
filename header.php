@@ -14,15 +14,50 @@ if (isset($_POST['toggle_theme'])) {
     $theme = $new_theme;
 }
 
-if (isset($_COOKIE['font_size'])) {
-    $font_size = $_COOKIE['font_size'];
-} else {
-    $font_size = 'medium';
-    setcookie('font_size', $font_size, time() + (86400 * 30), "/");
-}
-
 if (isset($_POST['font_size'])) {
     $font_size = $_POST['font_size'];
+    setcookie('font_size', $font_size, time() + (86400 * 30), "/");
+
+    $history = isset($_COOKIE['font_size_history']) ? json_decode($_COOKIE['font_size_history'], true) : [];
+    $current_time = date('Y-m-d H:i:s');
+
+    $history[] = ['font_size' => $font_size, 'time' => $current_time];
+
+    if (count($history) > 5) {
+        array_shift($history);
+    }
+
+    setcookie('font_size_history', json_encode($history), time() + (86400 * 30), "/");
+    setcookie('selected_font_size_history', json_encode($history[4]), time() + (86400 * 30), "/");
+
+    $font_size_history = $history;
+    $selected_font_size_history = end($history);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit();
+}
+
+if (isset($_POST['font_size_history'])) {
+    $selected_entry = json_decode($_POST['font_size_history'], true);
+
+    setcookie('selected_font_size_history', json_encode($selected_entry), time() + (86400 * 30), "/");
+
+    $font_size = $selected_entry['font_size'];
+    setcookie('font_size', $font_size, time() + (86400 * 30), "/");
+
+    $selected_font_size_history = $selected_entry;
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit();
+}
+
+$font_size_history = isset($_COOKIE['font_size_history']) ? json_decode($_COOKIE['font_size_history'], true) : [];
+$selected_font_size_history = isset($_COOKIE['selected_font_size_history']) ? json_decode($_COOKIE['selected_font_size_history'], true) : null;
+
+if (isset($_COOKIE['font_size'])) {
+    $font_size = $selected_font_size_history ? $selected_font_size_history['font_size'] : $_COOKIE['font_size'];
+} else {
+    $font_size = 'medium';
     setcookie('font_size', $font_size, time() + (86400 * 30), "/");
 }
 
@@ -110,13 +145,33 @@ if (isset($_SESSION['user_id'])) {
                     <span class="slider round"></span>
                 </button>
             </form>
-           <form method="post" class="font-size-selector">
+            <form method="post" class="font-size-selector">
                 <select name="font_size" onChange="this.form.submit()">
                     <option value="small" <?php echo $font_size === 'small' ? 'selected' : ''; ?>>Small</option>
                     <option value="medium" <?php echo $font_size === 'medium' ? 'selected' : ''; ?>>Medium</option>
                     <option value="large" <?php echo $font_size === 'large' ? 'selected' : ''; ?>>Large</option>
                 </select>
             </form>
+            <?php if (!empty($font_size_history)): ?>
+                <form method="post" class="font-size-history" style="width: max-content">
+                    <select name="font_size_history" onChange="this.form.submit()">
+                        <?php
+/*                        $selected_font_size_history = isset($_COOKIE['selected_font_size_history']) ? json_decode($_COOKIE['selected_font_size_history'], true) : null;
+                        */?>
+                        <?php foreach ($font_size_history as $entry): ?>
+                            <option value='<?php echo json_encode($entry); ?>'
+                                <?php
+                                $isSelected = $selected_font_size_history
+                                    && $selected_font_size_history['font_size'] === $entry['font_size']
+                                    && $selected_font_size_history['time'] === $entry['time'];
+                                echo $isSelected ? 'selected' : '';
+                                ?>>
+                                <?php echo $entry['font_size']; ?> - <?php echo $entry['time']; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
+            <?php endif; ?>
         </nav>
     </div>
 </header>
