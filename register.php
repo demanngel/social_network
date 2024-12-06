@@ -1,11 +1,9 @@
 <?php
 include './db.php';
 
-try {
-    if ($conn->connect_error) {
-        throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
-    }
+$conn = db_connect();
 
+try {
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = $_POST['username'];
         $email = $_POST['email'];
@@ -26,7 +24,7 @@ try {
         }
 
         if (!empty($errors)) {
-            header('Location: registerForm.php?error=' . urlencode(implode(', ', $errors)));
+            header('Location: register.php?error=' . urlencode(implode(', ', $errors)));
             exit();
         }
 
@@ -37,7 +35,7 @@ try {
             $result = $stmt->get_result();
 
             if ($result->num_rows > 0) {
-                header('Location: registerForm.php?error=user_exists');
+                header('Location: register.php?error=user_exists');
                 exit();
             } else {
                 $sql = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
@@ -59,11 +57,55 @@ try {
         }
     }
 } catch (Exception $e) {
-    header('Location: registerForm.php?error=exception');
+    header('Location: register.php?error=exception');
     exit();
 } finally {
     if (isset($stmt)) {
         $stmt->close();
     }
-    $conn->close();
+    db_close($conn);
 }
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="styles/light-theme.css?">
+</head>
+<body>
+<div class="container auth">
+    <h1>Register</h1>
+    <?php if (isset($_GET['error'])): ?>
+        <?php if ($_GET['error'] == 'user_exists'): ?>
+            <p>Пользователь с таким именем или email уже существует.</p>
+        <?php elseif ($_GET['error'] == 'exception'): ?>
+            <p>Произошла ошибка при регистрации.</p>
+        <?php else: ?>
+            <p><?php echo htmlspecialchars($_GET['error']); ?></p>
+        <?php endif; ?>
+    <?php elseif (isset($_GET['success']) && $_GET['success'] == 'registered'): ?>
+        <p>Регистрация успешна! Теперь вы можете войти в систему.</p>
+    <?php endif; ?>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <div class="radio-group">
+            <label for="role" class="form-label">Role:</label>
+            <label class="radio-label">
+                <input type="radio" name="role" value="user" checked> User
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="role" value="moderator"> Moderator
+            </label>
+        </div>
+        <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="login.php">Login here</a>.</p>
+</div>
+</body>
+</html>

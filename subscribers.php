@@ -1,41 +1,21 @@
 <?php
-include './db.php';
-include 'header.php';
+use controllers\HeaderController;
+
+require_once './db.php';
+require_once './controllers/HeaderController.php';
+
+$conn = db_connect();
+$HeaderController = new HeaderController($conn);
+$HeaderController->viewHeader();
 
 try {
     $user_id = $_SESSION['user_id'];
     if (!isset($_SESSION['user_id'])) {
-        header('Location: loginForm.php');
+        header('Location: index.php?action=login');
         exit();
     }
 
-    if (isset($_SESSION['user_id'])) {
-        $user_id = intval($_SESSION['user_id']);
-
-        $sql = "SELECT role FROM users WHERE id = ?";
-
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('i', $user_id);
-            $stmt->execute();
-            $stmt->bind_result($user_role);
-            $stmt->fetch();
-            $stmt->close();
-
-            if (empty($user_role)) {
-                $user_role = 'user';
-            }
-        } else {
-            die("Ошибка запроса: " . $conn->error);
-        }
-    } else {
-        $user_role = 'guest';
-
-        if ($user_role !== 'admin') {
-            header('Location: loginForm.php');
-            exit();
-        }
-    }
-
+    $user_role = $_SESSION['user_role'] ?? 'user';
     $group_id = intval($_GET['group_id']);
     $search_term = $_GET['search'] ?? '';
 
@@ -75,7 +55,7 @@ try {
             $stmt->bind_param('ii', $group_id, $user_id_to_remove);
             $stmt->execute();
             $stmt->close();
-            header('Location: subscribers.php?group_id=' . $group_id);
+            /*header('Location: subscribers.php?group_id=' . $group_id);*/
             exit();
         } else {
             throw new Exception("Ошибка при удалении пользователя из группы: " . $conn->error);
@@ -90,14 +70,15 @@ try {
 
 <div class="container">
     <div class="back-button action-button">
-        <a href="group.php?id=<?php echo $group_id; ?>">🠔</a>
+        <a href="index.php?action=group&id=<?php echo $group_id; ?>">🠔</a>
     </div>
 
     <h2>Subscribers of <?php echo htmlspecialchars($group_name); ?></h2>
 
-    <form action="subscribers.php" method="GET">
+    <form action="index.php" method="GET">
         <div class="search-container">
             <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
+            <input type="hidden" name="action" value="subscribers">
             <input type="text" name="search" placeholder="Search for posts" value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
             <?php if (!empty($search_term)): ?>
                 <button class="search-button" type="submit" name="search" value="">×</button>
@@ -112,6 +93,8 @@ try {
                 <div class="actions">
                     <?php if ($user_role == 'moderator'): ?>
                         <form action="subscribers.php?group_id=<?php echo $group_id; ?>" method="POST" style="display:inline;">
+                            <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
+                            <input type="hidden" name="action" value="subscribers">
                             <input type="hidden" name="user_id" value="<?php echo $subscriber['id']; ?>">
                             <button type="submit" name="remove_user" class="action-button">🗑</button>
                         </form>

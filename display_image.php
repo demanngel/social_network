@@ -1,9 +1,7 @@
 <?php
 include './db.php';
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+$conn = db_connect();
 
 $image_id = $_GET['id'];
 
@@ -18,3 +16,5 @@ if($stmt = $conn->prepare($sql)) {
 }
 
 echo $image_data;
+
+db_close($conn);

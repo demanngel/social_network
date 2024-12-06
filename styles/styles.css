@@ -492,7 +492,6 @@ img {
     transition: transform 0.4s;
 }
 
-/* Включенное состояние */
 .slider-button.active {
     background-color: #4CAF50;
 }

@@ -3,6 +3,8 @@ include './db.php';
 include 'header.php';
 
 try {
+    $conn = db_connect();
+
     $group_id = intval($_GET['group_id']);
     $user_id = $_SESSION['user_id'];
     $user_role = $_SESSION['user_role'];
@@ -42,6 +44,7 @@ try {
             throw new Exception("Ошибка при получении информации о группе: " . $conn->error);
         }
     }
+    db_close($conn);
 } catch (Exception $e) {
     header('Location: error.php?message=' . urlencode($e->getMessage()));
     exit();

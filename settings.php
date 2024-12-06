@@ -5,10 +5,6 @@ include 'header.php';
 $notification = '';
 
 try {
-    if ($conn->connect_error) {
-        throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
-    }
-
     if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'admin') {
         header('Location: loginForm.php');
         exit();

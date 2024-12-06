@@ -1,16 +1,18 @@
 <?php
-include './db.php';
-include 'header.php';
+use controllers\HeaderController;
+
+require_once './db.php';
+require_once './controllers/HeaderController.php';
+
+$conn = db_connect();
+$HeaderController = new HeaderController($conn);
+$HeaderController->viewHeader();
 
 $notification = '';
 
 try {
-    if ($conn->connect_error) {
-        throw new Exception("Database connection error: " . $conn->connect_error);
-    }
-
     if (!isset($_SESSION['user_id'])) {
-        header('Location: loginForm.php');
+        header('Location: index.php?action=login');
         exit();
     }
 
@@ -96,9 +98,6 @@ try {
         }
     }
 
-
-
-
 } catch (Exception $e) {
     $notification = "Error: " . htmlspecialchars($e->getMessage());
 }
@@ -119,7 +118,7 @@ try {
         </div>
     </div>
 
-    <form action="profile.php" method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data">
         <label for="profile_image">Upload Profile Image:</label>
         <input type="file" name="profile_image" accept="image/*" required>
         <button type="submit">Upload</button>

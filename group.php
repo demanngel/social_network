@@ -1,16 +1,17 @@
 <?php
-include './db.php';
-include 'header.php';
+use controllers\HeaderController;
 
-$cache_dir = 'cache/';
+require_once './db.php';
+require_once './controllers/HeaderController.php';
+
+$conn = db_connect();
+$HeaderController = new HeaderController($conn);
+$HeaderController->viewHeader();
 
 try {
-    if ($conn->connect_error) {
-        throw new Exception("Ошибка подключения к базе данных: " . $conn->connect_error);
-    }
 
     if (!isset($_SESSION['user_id'])) {
-        header('Location: loginForm.php');
+        header('Location: index.php?action=login');
         exit();
     }
 
@@ -20,39 +21,25 @@ try {
     $group_id = intval($_GET['id']);
     $search_term = $_GET['search'] ?? '';
 
-    $group_cache_file = $cache_dir . "group_$group_id.json";
-    $posts_cache_file = $cache_dir . "posts_$group_id.json";
-    $cache_lifetime = 3600;
 
-    function get_cached_data($file, $lifetime) {
-        if (file_exists($file) && (filemtime($file) + $lifetime > time())) {
-            return json_decode(file_get_contents($file), true);
-        }
-        return false;
-    }
+    $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
+            COUNT(m.user_id) AS subscriber_count,
+            (SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?) AS is_member
+            FROM `groups` AS g
+            JOIN users AS u ON g.created_by = u.id
+            LEFT JOIN group_members AS m ON g.id = m.group_id
+            WHERE g.id = ?
+            GROUP BY g.id, g.name, g.description, u.username";
 
-    $group = get_cached_data($group_cache_file, $cache_lifetime);
-    if (!$group) {
-        $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
-                COUNT(m.user_id) AS subscriber_count,
-                (SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?) AS is_member
-                FROM `groups` AS g
-                JOIN users AS u ON g.created_by = u.id
-                LEFT JOIN group_members AS m ON g.id = m.group_id
-                WHERE g.id = ?
-                GROUP BY g.id, g.name, g.description, u.username";
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param('iii', $group_id, $user_id, $group_id);
+        $stmt->execute();
+        $group_result = $stmt->get_result();
+        $group = $group_result->fetch_assoc();
+        $stmt->close();
 
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('iii', $group_id, $user_id, $group_id);
-            $stmt->execute();
-            $group_result = $stmt->get_result();
-            $group = $group_result->fetch_assoc();
-            $stmt->close();
-
-            file_put_contents($group_cache_file, json_encode($group));
-        } else {
-            throw new Exception("Ошибка при получении информации о группе: " . $conn->error);
-        }
+    } else {
+        throw new Exception("Ошибка при получении информации о группе: " . $conn->error);
     }
 
     if (!$group) {
@@ -63,7 +50,6 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['add_post'])) {
-            // Обработка добавления поста
             $post_content = $_POST['post_content'];
             $topic_id = intval($_POST['topic_id']);
 
@@ -83,7 +69,7 @@ try {
                             $stmt_post->bind_param('iisii', $group_id, $user_id, $post_content, $topic_id, $image_id);
                             $stmt_post->execute();
                             $stmt_post->close();
-                            header("Location: group.php?id=$group_id");
+                            header("Location: index.php?action=group&id=$group_id");
                             exit();
                         } else {
                             throw new Exception("Ошибка при добавлении поста: " . $conn->error);
@@ -101,7 +87,7 @@ try {
             $stmt->bind_param('ii', $group_id, $user_id);
             $stmt->execute();
             $stmt->close();
-            header("Location: group.php?id=$group_id");
+            header("Location: index.php?action=group&id=$group_id");
             exit();
         }
 
@@ -111,7 +97,7 @@ try {
             $stmt->bind_param('ii', $group_id, $user_id);
             $stmt->execute();
             $stmt->close();
-            header("Location: group.php?id=$group_id");
+            header("Location: index.php?action=group&id=$group_id");
             exit();
         }
 
@@ -127,7 +113,7 @@ try {
             $stmt->bind_param('ii', $group_id, $group_id);
             $stmt->execute();
             $stmt->close();
-            header("Location: groups.php");
+            header("Location: index.php?action=groups");
             exit();
         }
     }
@@ -149,32 +135,33 @@ try {
 }
 ?>
 
-
 <div class="container groups">
     <div class="back-button action-button">
-        <a href="groups.php?">🠔</a>
+        <a href="index.php?action=groups">🠔</a>
     </div>
     <h1><?php echo htmlspecialchars($group['name']); ?></h1>
     <div class="group">
         <div class="group_info">
             <p>Description: <?php echo htmlspecialchars($group['description']); ?></p>
             <p>Created by: <?php echo htmlspecialchars($group['creator']); ?></p>
-            <p>Subscribers: <a href="subscribers.php?group_id=<?php echo $group_id; ?>"><?php echo $group['subscriber_count']; ?></a></p>
+            <p>Subscribers: <a href="index.php?action=subscribers&group_id=<?php echo $group_id; ?>"><?php echo $group['subscriber_count']; ?></a></p>
         </div>
         <div class="actions group-actions">
             <?php if ($user_role == 'moderator'): ?>
-                <form action="edit_group.php" method="GET" >
+                <form action="index.php?action=edit_group" method="GET" >
                     <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                     <button type="submit" class="action-button">✎</button>
                 </form>
-                <form action="group.php?id=<?php echo $group_id; ?>" method="POST" onsubmit="return confirm('Are you sure you want to delete this group?');">
+                <form method="POST" onsubmit="return confirm('Are you sure you want to delete this group?');">
+                    <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                     <input type="hidden" name="delete_group" value="true">
                     <button type="submit" class="action-button">🗑</button>
                 </form>
             <?php endif; ?>
             <?php if ($user_role == 'user'): ?>
                 <div class="group-actions">
-                    <form action="group.php?id=<?php echo $group_id; ?>" method="POST">
+                    <form method="POST">
+                        <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                         <?php if ($is_member): ?>
                             <button type="submit" name="leave_group">Leave Group</button>
                         <?php else: ?>
@@ -184,7 +171,9 @@ try {
                 </div>
             <?php endif; ?>
             <?php if ($user_role == 'moderator' || $is_member): ?>
-                <form action="suggested_posts.php" method="GET">
+
+                <form action="index.php" method="GET">
+                    <input type="hidden" name="action" value="suggested_posts">
                     <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                     <button type="submit" class="action-button action-button1">Suggested posts</button>
                 </form>
@@ -193,7 +182,8 @@ try {
     </div>
 
     <?php if ($is_member): ?>
-        <form action="group.php?id=<?php echo $group_id; ?>" method="POST" enctype="multipart/form-data" class="add_post_container">
+        <form method="POST" enctype="multipart/form-data" class="add_post_container">
+            <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
             <label for="topic">Topic:</label>
             <select name="topic_id" id="topic" class="topic">
                 <?php
@@ -211,8 +201,9 @@ try {
 
     <?php endif; ?>
     <?php if ($is_member || $user_role == "moderator"): ?>
-        <form action="group.php" method="GET">
+        <form action="index.php" method="GET">
             <div class="search-container">
+                <input type="hidden" name="action" value="group">
                 <input type="hidden" name="id" value="<?php echo $group_id; ?>">
                 <input type="text" name="search" placeholder="Search for posts" value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
                 <?php if (!empty($search_term)): ?>
@@ -237,12 +228,14 @@ try {
                     </div>
                     <?php if ($user_role == 'moderator'): ?>
                         <div class="actions">
-                            <form action="edit_post.php?id=<?php echo $post['id'];?>" method="GET">
+                            <form action="index.php?action=edit_post.php" method="GET">
+                                <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                                 <input type="hidden" name="id" value="<?php echo $post['id']; ?>">
                                 <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                                 <button type="submit" class="action-button">✎</button>
                             </form>
-                            <form action="group.php?id=<?php echo $group_id; ?>" method="POST">
+                            <form method="POST">
+                                <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                                 <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                 <button type="submit" name="delete_post" class="action-button">🗑</button>
                             </form>

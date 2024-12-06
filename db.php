@@ -1,29 +1,27 @@
 <?php
-    $servername = "localhost";
-    $username = "root";
-    $password = "admin";
-    $dbname = "social_network";
+$DB_CONFIG = require 'config.php';
 
-    try {
-        $conn = new mysqli($servername, $username, $password,  $dbname);
-        
-        if ($conn->connect_error) {
-            throw new Exception("Ошибка подключения: " . $conn->connect_error);
-        }
+function db_connect() {
+    global $DB_CONFIG;
 
-        $storedProcedures = [
-            'CreateUsersTable',
-            'CreateGroupsTable',
-            'CreateGroupMembersTable',
-            /*'CreateGroupPostsTable'*/
-        ];
+    $conn = new mysqli(
+        $DB_CONFIG['host'],
+        $DB_CONFIG['user'],
+        $DB_CONFIG['password'],
+        $DB_CONFIG['dbname']
+    );
 
-        foreach ($storedProcedures as $procedure) {
-            if ($conn->query("CALL $procedure()") === FALSE) {
-                echo "Ошибка при запуске процедуры $procedure: " . $conn->error . "<br>";
-            }
-        }
-    } catch (mysqli_sql_exception $e) {
-        header('Location: loginForm.php?error=' . urlencode($e->getMessage()));
-        exit();
+    if ($conn->connect_error) {
+        die('Ошибка подключения: ' . $conn->connect_error);
     }
+
+    $conn->set_charset('utf8mb4');
+
+    return $conn;
+}
+
+function db_close($conn) {
+    if ($conn) {
+        $conn->close();
+    }
+}

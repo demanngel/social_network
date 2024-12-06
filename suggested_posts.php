@@ -1,6 +1,12 @@
 <?php
-include './db.php';
-include 'header.php';
+use controllers\HeaderController;
+
+require_once './db.php';
+require_once './controllers/HeaderController.php';
+
+$conn = db_connect();
+$HeaderController = new HeaderController($conn);
+$HeaderController->viewHeader();
 
 try {
     if (!isset($_SESSION['user_id'])) {
@@ -84,7 +90,7 @@ try {
                 throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
 
-            header("Location: suggested_posts.php?group_id=$group_id");
+            header("Location: index.php?action=suggested_posts&group_id=$group_id");
             exit();
         } elseif ($action === 'revision') {
             $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'revision', ?, ?)";
@@ -114,7 +120,7 @@ try {
                 throw new Exception("Ошибка при получении предложенных постов: " . $conn->error);
             }
 
-            header("Location: suggested_posts.php?group_id=$group_id");
+            header("Location: index.php?action=suggested_posts&group_id=$group_id");
             exit();
         } elseif ($action === 'reject') {
             $sql = "INSERT INTO post_history (post_id, action, moderator_id, comment) VALUES (?, 'rejected', ?, ?)";
