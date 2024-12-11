@@ -4,15 +4,15 @@ namespace controllers;
 
 use models\UserModel;
 
-require_once './models/UserModel.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 class AuthController
 {
     private $userModel;
 
-    public function __construct($conn)
+    public function __construct($conn, $userModel = null)
     {
-        $this->userModel = new UserModel($conn);
+        $this->userModel = $userModel ?: new UserModel($conn);
     }
 
     public function handleLoginRequest()
