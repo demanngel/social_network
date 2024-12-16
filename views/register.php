@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
-    <link rel="stylesheet" href="./../styles/styles.css">
-    <link rel="stylesheet" href="./../styles/light-theme.css?">
+    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="styles/light-theme.css?">
 </head>
 <body>
 <div class="container auth">

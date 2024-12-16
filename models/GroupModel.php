@@ -1,5 +1,7 @@
 <?php
+
 namespace models;
+
 class GroupModel {
     private $conn;
 
@@ -7,43 +9,23 @@ class GroupModel {
         $this->conn = $conn;
     }
 
-    public function getUserGroups($user_id, $search) {
-        $sql = "SELECT g.id, g.name, g.description, g.created_by, u.username AS creator, 
-                       IF(gm.user_id IS NOT NULL, 1, 0) AS is_member
-                FROM `groups` AS g
-                JOIN users AS u ON g.created_by = u.id
-                LEFT JOIN group_members AS gm ON g.id = gm.group_id AND gm.user_id = ?
-                WHERE g.name LIKE ? OR g.description LIKE ?
-                ORDER BY is_member DESC, g.name";
+    public function getGroups($user_id, $search, $user_role) {
+        $sql = $user_role === 'user'
+            ? "SELECT g.id, g.name, g.description, g.created_by, u.username AS creator, 
+                      IF(gm.user_id IS NOT NULL, 1, 0) AS is_member
+               FROM `groups` AS g
+               JOIN users AS u ON g.created_by = u.id
+               LEFT JOIN group_members AS gm ON g.id = gm.group_id AND gm.user_id = ?
+               WHERE g.name LIKE ? OR g.description LIKE ?
+               ORDER BY is_member DESC, g.name"
+            : "SELECT g.id, g.name, g.description
+               FROM `groups` AS g
+               WHERE g.created_by = ? and (g.name LIKE ? OR g.description LIKE ?)";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('iss', $user_id, $search, $search);
         $stmt->execute();
         return $stmt->get_result();
-    }
-
-    public function getModeratorGroups($user_id) {
-        $sql = "SELECT g.id, g.name, g.description 
-                FROM `groups` AS g 
-                WHERE g.created_by = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $user_id);
-        $stmt->execute();
-        return $stmt->get_result();
-    }
-
-    public function joinGroup($group_id, $user_id) {
-        $sql = "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('ii', $group_id, $user_id);
-        return $stmt->execute();
-    }
-
-    public function leaveGroup($group_id, $user_id) {
-        $sql = "DELETE FROM group_members WHERE group_id = ? AND user_id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('ii', $group_id, $user_id);
-        return $stmt->execute();
     }
 
     public function createGroup($name, $description, $user_id) {
@@ -60,6 +42,20 @@ class GroupModel {
         return $stmt->execute();
     }
 
+    public function joinGroup($group_id, $user_id) {
+        $sql = "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ii', $group_id, $user_id);
+        return $stmt->execute();
+    }
+
+    public function leaveGroup($group_id, $user_id) {
+        $sql = "DELETE FROM group_members WHERE group_id = ? AND user_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ii', $group_id, $user_id);
+        return $stmt->execute();
+    }
+
     public function getGroupById($group_id, $user_id) {
         $sql = "SELECT g.id, g.name, g.description, u.username AS creator, 
                        COUNT(m.user_id) AS subscriber_count,
@@ -69,40 +65,44 @@ class GroupModel {
                 LEFT JOIN group_members AS m ON g.id = m.group_id
                 WHERE g.id = ?
                 GROUP BY g.id, g.name, g.description, u.username";
+
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('iii', $group_id, $user_id, $group_id);
         $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        return $result;
+        return $stmt->get_result()->fetch_assoc();
     }
 
-    public function getPostsByGroup($group_id, $search_term) {
-        $sql = "SELECT p.id, p.content, p.created_at, p.image_id
-                FROM group_approved_posts AS p
-                WHERE p.group_id = ? AND p.content LIKE ?
-                ORDER BY p.created_at DESC";
+    public function getGroupPosts($group_id) {
+        $sql = "SELECT p.id, p.content, p.created_at, u.username AS author 
+            FROM group_approved_posts AS p
+            JOIN users AS u ON p.author_id = u.id
+            WHERE p.group_id = ?
+            ORDER BY p.created_at DESC";
         $stmt = $this->conn->prepare($sql);
-        $search_param = '%' . $search_term . '%';
-        $stmt->bind_param('is', $group_id, $search_param);
+        $stmt->bind_param('i', $group_id);
         $stmt->execute();
-        $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        return $result;
+        return $stmt->get_result();
     }
 
-    public function getTopics() {
-        $sql = "SELECT id, name FROM topics";
-        return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
-    }
-
-    public function addPost($group_id, $user_id, $content, $topic_id, $image_id) {
-        $sql = "INSERT INTO group_suggested_posts (group_id, user_id, content, status, topic_id, image_id)
-                VALUES (?, ?, ?, 'on_moderation', ?, ?)";
+    public function addPost($group_id, $author_id, $content) {
+        $sql = "INSERT INTO group_suggested_posts (group_id, author_id, content, created_at) 
+            VALUES (?, ?, ?, NOW())";
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('iisii', $group_id, $user_id, $content, $topic_id, $image_id);
-        $stmt->execute();
-        $stmt->close();
+        $stmt->bind_param('iis', $group_id, $author_id, $content);
+        return $stmt->execute();
     }
+
+    public function deletePost($post_id, $user_id, $user_role) {
+        $sql = $user_role === 'admin'
+            ? "DELETE FROM group_posts WHERE id = ?"
+            : "DELETE FROM group_posts WHERE id = ? AND author_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        if ($user_role === 'admin') {
+            $stmt->bind_param('i', $post_id);
+        } else {
+            $stmt->bind_param('ii', $post_id, $user_id);
+        }
+        return $stmt->execute();
+    }
+
 }
-

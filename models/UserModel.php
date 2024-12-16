@@ -4,10 +4,9 @@ namespace models;
 class UserModel
 {
     private $conn;
-
-    public function __construct($dbConnection)
+    public function __construct($conn)
     {
-        $this->conn = $dbConnection;
+        $this->conn = $conn;
     }
 
     public function findUserByUsername($username)
@@ -30,7 +29,7 @@ class UserModel
 
     public function registerUser($username, $email, $password, $role)
     {
-        $sql = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO users (username, email, password, role, is_protected) VALUES (?, ?, ?, ?, 0)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('ssss', $username, $email, $password, $role);
         return $stmt->execute();
@@ -38,11 +37,54 @@ class UserModel
 
     public function findUserById($userId)
     {
-        $sql = "SELECT role FROM users WHERE id = ?";
+        $sql = "SELECT * FROM users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('i', $userId);
         $stmt->execute();
-        $result = $stmt->get_result();
-        return $result->fetch_assoc();
+        return $stmt->get_result()->fetch_assoc();
     }
+
+    public function getRating($user_id)
+    {
+        $sql = "SELECT rating FROM users WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    public function updateRating($rating, $user_id)
+    {
+        $sql = "UPDATE users SET rating = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ii', $rating, $user_id);
+        return $stmt->execute();
+    }
+
+    public function updateProfileImage($user_id, $image_id)
+    {
+        $update_sql = "UPDATE users SET image_id = ? WHERE id = ?";
+        if ($update_stmt = $this->conn->prepare($update_sql)) {
+            $update_stmt->bind_param('si', $image_id, $user_id);
+            $update_stmt->execute();
+            $update_stmt->close();
+        }
+    }
+
+    public function deleteUserById($user_id) {
+        $sql = "DELETE FROM users WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $user_id);
+        return $stmt->execute();
+    }
+
+    public function getUsers($search) {
+        $sql = "SELECT id, username, role FROM users WHERE username LIKE ? AND is_protected = 0 ORDER BY role";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $search);
+        $stmt->execute();
+        return $stmt->get_result();
+    }
+
 }

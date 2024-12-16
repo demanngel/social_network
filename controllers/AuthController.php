@@ -47,6 +47,7 @@ class AuthController
 
             if ($user && password_verify($password, $user['password'])) {
                 $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_role'] = $user['role'];
                 header('Location: index.php?action=home');
             } else {
                 header('Location: index.php?action=login&error=user_does_not_exist');

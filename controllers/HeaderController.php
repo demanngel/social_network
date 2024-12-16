@@ -57,7 +57,7 @@ class HeaderController
         ];
 
         if ($userRole === 'admin') {
-            $links['users'] = '../users.php';
+            $links['users'] = 'index.php?action=users';
             $links['settings'] = '../settings.php';
         }
 

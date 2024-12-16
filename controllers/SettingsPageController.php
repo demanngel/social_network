@@ -10,7 +10,7 @@ use models\SubscribersModel;
 use models\GroupModel;
 use controllers\HeaderController;
 
-class SubscribersPageController {
+class SettingsPageController {
     private $subscribersModel;
     private $groupModel;
     private $headerController;

@@ -6,7 +6,9 @@ require_once './controllers/ProfilePageController.php';
 require_once './controllers/GroupsController.php';
 require_once './controllers/SuggestedPostsPageController.php';
 require_once './controllers/SubscribersPageController.php';
-
+require_once './controllers/PostHistoryPageController.php';
+require_once './controllers/FilesController.php';
+require_once './controllers/UsersPageController.php';
 
 use controllers\AuthController;
 use controllers\HomePageController;
@@ -14,6 +16,9 @@ use controllers\GroupsController;
 use controllers\ProfilePageController;
 use controllers\SuggestedPostsPageController;
 use controllers\SubscribersPageController;
+use controllers\PostHistoryPageController;
+use controllers\FilesController;
+use controllers\UsersPageController;
 
 $conn = db_connect();
 
@@ -22,9 +27,12 @@ $action = $_GET['action'] ?? 'login';
 $authController = new AuthController($conn);
 $homepageController = new HomepageController($conn);
 $groupsController = new GroupsController($conn);
-$profilepageController = new ProfilepageController($conn);
-$suggestedpostspageController = new SuggestedpostspageController($conn);
-$subcriberspageController = new SubscribersPageController($conn);
+$profilePageController = new ProfilepageController($conn);
+$suggestedPostsPageController = new SuggestedpostspageController($conn);
+$subcribersPageController = new SubscribersPageController($conn);
+$postHistoryPageController = new PostHistoryPageController($conn);
+$filesController = new FilesController($conn);
+$usersPageController = new UsersPageController($conn);
 
 switch ($action) {
 
@@ -45,7 +53,7 @@ switch ($action) {
         break;
 
     case 'profile':
-        $profilepageController->viewProfilePage();
+        $profilePageController->viewProfilePage();
         break;
 
     case 'group':
@@ -53,11 +61,23 @@ switch ($action) {
         break;
 
     case 'suggested_posts':
-        $suggestedpostspageController->viewSuggestedPostsPage();
+        $suggestedPostsPageController->viewSuggestedPostsPage();
         break;
 
     case 'subscribers':
-        $subcriberspageController->viewSubscribersPage();
+        $subcribersPageController->viewSubscribersPage();
+        break;
+
+    case 'post_history':
+        $postHistoryPageController->viewPostHistoryPage();
+        break;
+
+    case 'display_image':
+        $filesController->displayImage($_GET['id']);
+        break;
+
+    case 'users':
+        $usersPageController->viewUsersPage();
         break;
 
     default:

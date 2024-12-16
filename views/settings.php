@@ -5,11 +5,6 @@ include 'header.php';
 $notification = '';
 
 try {
-    if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'admin') {
-        header('Location: loginForm.php');
-        exit();
-    }
-
     $sql = "SELECT name, value FROM settings";
     if ($stmt = $conn->prepare($sql)) {
         $stmt->execute();
@@ -20,17 +15,6 @@ try {
     }
 
     $settings = array_column($settings, 'value', 'name');
-
-    $topics = [];
-
-    $sql = "SELECT id, name, weight FROM topics";
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->execute();
-        $topics = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-    } else {
-        throw new Exception("Ошибка подготовки запроса: " . $conn->error);
-    }
 
     $sql = "SELECT id, mime_type, enabled FROM allowed_image_types";
     if ($stmt = $conn->prepare($sql)) {
@@ -94,35 +78,6 @@ try {
                 }
             }
         }
-    }
-
-    if (isset($_GET['delete_topic'])) {
-        $topic_id = intval($_GET['delete_topic']);
-        $sql = "DELETE FROM topics WHERE id = ?";
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('i', $topic_id);
-            $stmt->execute();
-            $stmt->close();
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit();
-        } else {
-            throw new Exception("Ошибка при удалении тематики: " . $stmt->error);
-        }
-    }
-
-    if (isset($_POST['update_weights'])) {
-        foreach ($_POST['weights'] as $id => $weight) {
-            $sql = "UPDATE topics SET weight = ? WHERE id = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param('di', $weight, $id);
-                $stmt->execute();
-                $stmt->close();
-            } else {
-                throw new Exception("Ошибка при обновлении веса тематики: " . $stmt->error);
-            }
-        }
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit();
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['weight_factor1'])) {
