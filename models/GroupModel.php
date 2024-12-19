@@ -105,6 +105,13 @@ class GroupModel {
         return $stmt->execute();
     }
 
+    public function updatePost($post_id, $content, $user_id) {
+        $sql = "UPDATE posts SET content = ? WHERE id = ? AND author_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('sii', $content, $post_id, $user_id);
+        return $stmt->execute();
+    }
+
     public function updateGroup($group_id, $name, $description, $user_id) {
         $sql = "UPDATE `groups` SET name = ?, description = ? WHERE id = ? AND created_by = ?";
         $stmt = $this->conn->prepare($sql);
