@@ -105,4 +105,11 @@ class GroupModel {
         return $stmt->execute();
     }
 
+    public function updateGroup($group_id, $name, $description, $user_id) {
+        $sql = "UPDATE `groups` SET name = ?, description = ? WHERE id = ? AND created_by = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ssii', $name, $description, $group_id, $user_id);
+        return $stmt->execute();
+    }
+
 }

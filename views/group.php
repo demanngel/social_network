@@ -11,10 +11,7 @@
         </div>
         <div class="actions group-actions">
             <?php if ($user_role == 'moderator'): ?>
-                <form action="index.php?action=edit_group" method="GET" >
-                    <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
-                    <button type="submit" class="action-button">✎</button>
-                </form>
+                <button type="button" onclick="openEditModal(<?php echo $group_id; ?>, '<?php echo htmlspecialchars($group['name']); ?>', '<?php echo htmlspecialchars($group['description']); ?>')" class="action-button">✎</button>
                 <form method="POST" onsubmit="return confirm('Are you sure you want to delete this group?');">
                     <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                     <input type="hidden" name="delete_group" value="true">
@@ -47,11 +44,11 @@
         <form method="POST" enctype="multipart/form-data" class="add_post_container">
             <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
             <textarea name="post_content" class="post_content" required></textarea>
-            <input type="file" name="post_image" id="post_image" accept="image/*"">
+            <input type="file" name="post_image" id="post_image" accept="image/*">
             <button type="submit" name="add_post">Add post</button>
         </form>
-
     <?php endif; ?>
+
     <?php if ($is_member || $user_role == "moderator"): ?>
         <form method="GET">
             <div class="search-container">
@@ -80,12 +77,7 @@
                     </div>
                     <?php if ($user_role == 'moderator'): ?>
                         <div class="actions">
-                            <form action="index.php?action=edit_post" method="GET">
-                                <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
-                                <input type="hidden" name="id" value="<?php echo $post['id']; ?>">
-                                <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
-                                <button type="submit" class="action-button">✎</button>
-                            </form>
+                            <button type="button" onclick="openEditPostModal(<?php echo $post['id']; ?>, '<?php echo htmlspecialchars($post['content']); ?>')" class="action-button">✎</button>
                             <form method="POST">
                                 <input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
                                 <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
@@ -98,3 +90,32 @@
         </div>
     <?php endif; ?>
 </div>
+
+<div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Group</h2>
+        <form method="POST" id="editGroupForm">
+            <input type="hidden" name="edit_group" value="true">
+            <input type="hidden" name="group_id" id="edit_group_id">
+            <input type="text" name="group_name" id="edit_group_name" required>
+            <textarea name="group_description" id="edit_group_description" required></textarea>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<div id="editPostModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Post</h2>
+        <form method="POST" id="editPostForm">
+            <input type="hidden" name="edit_post" value="true">
+            <input type="hidden" name="post_id" id="edit_post_id">
+            <textarea name="post_content" id="edit_post_content" required></textarea>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/modals.js"></script>

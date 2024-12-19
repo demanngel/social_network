@@ -52,6 +52,12 @@ class GroupsController {
                     $this->groupModel->deleteGroup(intval($_POST['group_id']), $user_id);
                 }
             }
+            if (isset($_POST['edit_group'])) {
+                $group_id = intval($_POST['group_id']);
+                $group_name = $_POST['group_name'];
+                $group_description = $_POST['group_description'];
+                $this->groupModel->updateGroup($group_id, $group_name, $group_description, $user_id);
+            }
         }
 
         $groups = $this->groupModel->getGroups($user_id, $search, $user_role);

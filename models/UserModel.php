@@ -80,11 +80,18 @@ class UserModel
     }
 
     public function getUsers($search) {
-        $sql = "SELECT id, username, role FROM users WHERE username LIKE ? AND is_protected = 0 ORDER BY role";
+        $sql = "SELECT id, username, email, role FROM users WHERE username LIKE ? AND is_protected = 0 ORDER BY role";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('s', $search);
         $stmt->execute();
         return $stmt->get_result();
+    }
+
+    public function updateUser($user_id, $username, $email) {
+        $sql = "UPDATE users SET username = ?, email = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ssi', $username, $email, $user_id);
+        return $stmt->execute();
     }
 
 }

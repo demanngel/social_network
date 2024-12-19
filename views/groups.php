@@ -63,10 +63,7 @@
                     <p>Description: <?php echo htmlspecialchars($group['description']); ?></p>
                 </div>
                 <div class="actions">
-                    <form action="index.php?action=edit_group" method="GET" style="display:inline;">
-                        <input type="hidden" name="group_id" value="<?php echo $group['id']; ?>">
-                        <button type="submit" class="action-button">✎</button>
-                    </form>
+                    <button type="button" onclick="openEditModal(<?php echo $group['id']; ?>, '<?php echo htmlspecialchars($group['name']); ?>', '<?php echo htmlspecialchars($group['description']); ?>')" class="action-button">✎</button>
                     <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this group?');">
                         <input type="hidden" name="group_id" value="<?php echo $group['id']; ?>">
                         <button type="submit" name="delete_group" class="action-button">🗑</button>
@@ -76,3 +73,19 @@
         <?php endwhile; ?>
     <?php endif; ?>
 </div>
+
+<div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Group</h2>
+        <form method="POST" id="editGroupForm">
+            <input type="hidden" name="edit_group" value="true">
+            <input type="hidden" name="group_id" id="edit_group_id">
+            <input type="text" name="group_name" id="edit_group_name" required>
+            <textarea name="group_description" id="edit_group_description" required></textarea>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/modals.js"></script>
