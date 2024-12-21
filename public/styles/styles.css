@@ -599,3 +599,20 @@ img {
 .modal button[type="submit"] {
     margin-top: 10px;
 }
+
+.error-message {
+    background-color: #ffebee;
+    border: 1px solid #ef5350;
+    color: #c62828;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Для темной темы */
+[data-theme="dark"] .error-message {
+    background-color: rgba(239, 83, 80, 0.1);
+    border-color: #ef5350;
+    color: #ef5350;
+}
